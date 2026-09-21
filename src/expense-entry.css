@@ -1,0 +1,49 @@
+.modal-backdrop.fullscreen-backdrop{padding:0;align-items:stretch;background:#fff}
+.modal.fullscreen-modal{display:flex;flex-direction:column;width:100%;height:100%;max-width:none;max-height:100%;padding:0;border-radius:0;box-shadow:none;overflow:hidden}
+.fullscreen-modal>.modal-heading{flex-shrink:0;margin:0;padding:calc(12px + env(safe-area-inset-top)) 20px 12px;min-height:64px;border-bottom:1px solid #eceef0;background:#fff}
+.fullscreen-modal>.modal-heading h2{flex:1;font-size:18px}
+.fullscreen-modal>.modal-heading .icon-button{color:#525d64}
+.expense-entry{display:flex;flex:1;flex-direction:column;min-height:0;max-width:760px;width:100%;margin:0 auto}
+.entry-steps{display:flex;justify-content:space-between;flex-shrink:0;gap:12px;list-style:none;margin:0;padding:18px 24px;border-bottom:1px solid #eef0f1}
+.entry-steps li{display:flex;align-items:center;gap:7px;font-size:12px;color:#949ba0}
+.entry-steps li>span{display:grid;place-items:center;width:22px;height:22px;border-radius:50%;background:#eff1f3;font-size:11px}
+.entry-steps .is-reached{color:#505a60}
+.entry-steps .is-reached>span{background:var(--brand-strong);color:#fff}
+.entry-steps li[aria-current="step"]{font-weight:650;color:#262a2e}
+.entry-scroll{min-height:0;overflow-y:auto;overscroll-behavior:contain}
+.entry-direction{padding:24px 20px;flex:1}
+.expense-entry h3{font-size:14px;font-weight:600}
+.entry-direction-option{display:flex;width:100%;min-height:88px;align-items:center;gap:16px;border-bottom:1px solid #eceef0;padding:16px 4px;text-align:left}
+.entry-direction-option>strong{flex:1;font-size:18px;font-weight:550}
+.entry-direction-icon{display:grid;place-items:center;width:48px;height:48px;border-radius:8px}
+.expense-option .entry-direction-icon{background:#fcebe7;color:#b65348}
+.income-option .entry-direction-icon{background:#e5f3ed;color:#267960}
+.entry-direction-tabs{display:flex;flex-shrink:0;gap:4px;margin:16px 20px 0;padding:4px;background:#f0f2f3;border-radius:8px}
+.entry-direction-tabs>button{flex:1;min-height:40px;border-radius:5px;font-size:15px;color:#677179}
+.entry-direction-tabs>button[aria-pressed="true"]{background:var(--brand-strong);color:#fff;font-weight:650}
+.entry-categories{padding:20px 16px 24px;flex:1}
+.entry-section-heading{display:flex;align-items:center;justify-content:space-between;margin:0 4px 16px}
+.entry-section-heading>span{font-size:12px;color:#899197}
+.entry-category-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px 4px}
+.entry-category-grid>button{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;min-height:92px;padding:8px 2px;border-radius:8px;font-size:13px;color:#495159}
+.entry-category-grid>button:hover{background:#f7f8f9}
+.entry-category-grid>button[aria-pressed="true"]{background:var(--brand-soft)}
+.entry-category-icon{display:grid;place-items:center;width:46px;height:46px;border-radius:8px;flex-shrink:0;background:var(--category-bg);color:var(--category-ink)}
+.entry-category-check{position:absolute;top:4px;right:8px;color:var(--brand-strong)}
+.entry-details{display:flex;flex-direction:column;flex:1;min-height:0}
+.entry-fields{margin:0;padding:0 24px 24px;border:0;min-width:0;flex:1}
+.entry-fields>label{margin-top:22px;font-size:13px;color:#647079}
+.entry-selected-category{display:flex;align-items:center;gap:12px;width:100%;padding:20px 0;border-bottom:1px solid #eceef0;text-align:left}
+.entry-selected-category>span:nth-child(2){display:flex;flex-direction:column;gap:2px;flex:1}
+.entry-selected-category small{font-size:12px;color:#859097}
+.entry-selected-category strong{font-size:16px;font-weight:600}
+.entry-fields .entry-amount input{font-size:32px;font-weight:600;line-height:1.4;height:66px;padding:8px 12px;font-variant-numeric:tabular-nums}
+.entry-fields input:not([type="number"]){min-height:48px}
+.entry-actions{display:flex;gap:12px;flex-shrink:0;border-top:1px solid #eceef0;padding:14px 20px calc(14px + env(safe-area-inset-bottom));background:#fff}
+.entry-actions>.primary{flex:1;min-height:48px;font-size:15px}
+.preview-keyboard-open .modal-backdrop.fullscreen-backdrop{padding:0}
+@media(max-width:360px){
+  .fullscreen-modal>.modal-heading{padding-left:16px;padding-right:16px}
+  .entry-fields{padding-left:20px;padding-right:20px}
+  .entry-category-grid>button{min-height:88px}
+}

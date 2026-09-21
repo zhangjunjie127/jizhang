@@ -1,0 +1,4 @@
+.add-menu-options>button{display:flex;align-items:center;gap:12px;min-height:52px;width:100%;padding:10px 0;text-align:left;border-bottom:1px solid var(--line);font-size:14px;color:inherit}
+.add-menu-options>button>svg{flex-shrink:0}
+.add-menu-options>button>span{min-width:0;overflow-wrap:anywhere}
+.add-menu-options>button:hover{color:var(--brand-strong)}

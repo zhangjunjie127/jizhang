@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">在在</string>
+    <string name="title_activity_main">在在</string>
+    <string name="package_name">cn.zaizai.companion</string>
+    <string name="custom_url_scheme">cn.zaizai.companion</string>
+</resources>

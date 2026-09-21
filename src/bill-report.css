@@ -1,0 +1,52 @@
+.ledger-section-tabs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));border-bottom:1px solid var(--line);margin-bottom:18px}
+.ledger-section-tabs>button{height:48px;min-width:0;font-size:15px;border-bottom:3px solid transparent;color:#667085}
+.ledger-section-tabs>button[aria-selected=true]{color:var(--brand-strong);border-bottom-color:var(--brand);font-weight:600}
+.ledger-section-tabs>button:focus-visible{outline:2px solid var(--brand);outline-offset:-4px}
+.bill-report{max-width:760px;margin:0 auto;background:#fff;min-height:calc(100dvh - 220px)}
+.bill-report-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:4px 0 20px}
+.bill-report-heading>.icon-button{color:#303438;width:40px;height:44px;margin-left:-8px}
+.bill-report-heading h2{font-size:18px;font-weight:600}
+.bill-heading-spacer{width:32px;flex-shrink:0}
+.bill-mode{display:flex;background:#f1f3f5;border:1px solid #e8ebef;border-radius:6px;padding:3px;gap:3px}
+.bill-mode>button{min-height:38px;padding:6px 20px;border-radius:4px;font-size:14px;color:#60656d}
+.bill-mode>button[aria-pressed=true]{background:var(--brand-strong);color:white;font-weight:600}
+.bill-period-line{display:flex;justify-content:space-between;align-items:center;min-height:34px;margin-bottom:12px;font-size:12px;color:#89909a}
+.bill-year{position:relative;display:flex;flex-direction:row;align-items:center;color:#303438}
+.bill-year select{appearance:none;width:auto;border:0;background:transparent;font-size:16px;font-weight:600;padding:6px 26px 6px 0}
+.bill-year>svg{position:absolute;right:3px;pointer-events:none;color:#7a828c}
+.bill-summary{background:var(--brand-soft);padding:24px 22px;color:#1c365a}
+.bill-summary-net>span{font-size:13px;color:#4b6686}
+.bill-summary-net strong{display:block;font-size:34px;font-weight:650;line-height:1.35;margin-top:8px}
+.bill-money{white-space:nowrap;font-variant-numeric:tabular-nums;overflow-wrap:normal}
+.bill-summary-pair{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;margin-top:22px}
+.bill-summary-pair>div{display:flex;flex-direction:column;min-width:0;gap:5px}
+.bill-summary-pair>div:last-child{text-align:right}
+.bill-summary-pair span:not(.bill-money){font-size:12px;color:#4b6686}
+.bill-summary-pair strong{font-size:19px;font-weight:600}
+.bill-table{width:100%;table-layout:fixed;border-collapse:collapse;margin-top:24px}
+.bill-period-column{width:56px}
+.bill-table-month .bill-period-column{width:44px}
+.bill-arrow-column{width:18px}
+.bill-table th,.bill-table td{text-align:center;vertical-align:middle;padding:20px 4px;border-bottom:1px solid var(--line);font-size:13px;font-weight:500}
+.bill-table thead th{font-size:12px;color:#808791;font-weight:400;padding-top:12px;padding-bottom:12px}
+.bill-table tr>:first-child{text-align:left;padding-left:0}
+.bill-table tr>:last-child{padding-left:2px;padding-right:0;color:#a5adb8}
+.bill-table tbody tr{cursor:pointer}
+.bill-table tbody tr:hover{background:#f6f9fc}
+.bill-table th button{padding:4px 0;min-height:32px;font-size:14px;font-weight:600}
+.bill-table tr>.bill-table-empty{text-align:center;padding:28px 0;color:#89909a;cursor:default}
+.bill-detail-filter{display:flex;align-items:center;gap:24px;border-bottom:1px solid var(--line);margin-top:16px}
+.bill-detail-filter>button{padding:14px 0;border-bottom:2px solid transparent;font-size:14px;color:#757d87}
+.bill-detail-filter>button[aria-pressed=true]{border-color:var(--brand);color:var(--brand-strong);font-weight:600}
+.bill-detail-filter>span{margin-left:auto;font-size:12px;color:#8a919b}
+@media(max-width:760px){
+  .bill-report-heading{padding-bottom:12px}
+  .bill-summary{padding:22px 18px}
+}
+@media(max-width:360px){
+  .bill-table th,.bill-table td{font-size:11px;padding-left:2px;padding-right:2px}
+  .bill-table th button{font-size:13px}
+  .bill-summary-net strong{font-size:30px}
+  .bill-summary-pair strong{font-size:17px}
+  .bill-mode>button{padding-left:16px;padding-right:16px}
+}

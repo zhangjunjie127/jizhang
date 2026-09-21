@@ -1,0 +1,41 @@
+.app-lock-screen,.lock-loading{position:fixed;inset:0;z-index:200;background:#f6f8fb;overflow-y:auto;display:flex;justify-content:center;padding:24px 20px calc(24px + env(safe-area-inset-bottom))}
+.lock-loading{align-items:center;font-size:14px}
+.lock-screen-inner{width:100%;max-width:360px;margin:auto;text-align:center}
+.lock-screen-inner>img{width:48px;height:48px;border-radius:8px;margin-bottom:8px}
+.lock-screen-inner h1{font-size:21px;margin:0}
+.lock-screen-inner h2,.lock-settings h3{font-size:16px;margin:0}
+.lock-account{font-size:13px;color:#6d7b8b;margin:6px 0 18px;overflow-wrap:anywhere}
+.lock-pin{width:100%;max-width:300px;margin:8px auto}
+.lock-pin-entry{position:relative;height:46px}
+.lock-pin-entry>input{position:absolute;inset:0;width:100%;height:100%;opacity:0;z-index:1;cursor:text}
+.lock-pin-slots{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:6px;height:46px;pointer-events:none}
+.lock-pin-slots>span{display:grid;place-items:center;min-width:0;border:1px solid #cdd7e2;border-radius:6px;background:#fff}
+.lock-pin-slots>span.is-current{border-color:var(--brand-strong)}
+.lock-pin-entry:focus-within .is-current{box-shadow:0 0 0 2px var(--brand-soft)}
+.lock-pin-slots i{display:block;width:10px;height:10px;background:#27374a;border-radius:50%}
+.lock-pin-entry.is-disabled{opacity:.55}
+.lock-keypad{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));grid-auto-rows:46px;gap:6px;margin-top:10px}
+.lock-keypad button{display:flex;align-items:center;justify-content:center;font-size:22px;border-radius:6px;background:#fff;border:1px solid #e3e8ef}
+.lock-keypad button:active{background:var(--brand-soft)}
+.lock-pattern-wrap{width:100%;max-width:280px;margin:0 auto;text-align:center}
+.lock-pattern{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));grid-template-rows:repeat(3,minmax(0,1fr));width:100%;aspect-ratio:1;position:relative;touch-action:none}
+.lock-pattern>svg{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.lock-pattern polyline{fill:none;stroke:var(--brand-strong);stroke-width:4;stroke-linecap:round;stroke-linejoin:round}
+.lock-pattern button{z-index:1;display:grid;place-items:center;padding:0;touch-action:none}
+.lock-pattern button>span{width:16px;height:16px;border-radius:50%;border:2px solid #9aa9b9;background:#fff}
+.lock-pattern button[aria-pressed="true"]>span{border-color:var(--brand-strong);background:var(--brand-strong);box-shadow:0 0 0 8px var(--brand-soft)}
+.lock-pattern-wrap>.text-button{min-height:36px;font-size:12px}
+.lock-mode-tabs{display:flex;gap:8px;justify-content:center;margin:10px 0}
+.lock-mode-tabs button{padding:8px 16px;border-bottom:2px solid transparent;font-size:14px}
+.lock-mode-tabs button[aria-pressed="true"]{color:var(--brand-strong);border-color:var(--brand-strong)}
+.lock-submit,.lock-biometric{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;min-height:44px;margin:12px 0}
+.lock-screen-inner>.text-button{min-height:40px;font-size:13px}
+.lock-screen-inner>.lock-logout{display:block;margin:8px auto;color:#7b8794}
+.lock-settings,.lock-settings form,.lock-screen-inner form{display:flex;flex-direction:column;gap:14px}
+.lock-settings form>button,.lock-settings>.secondary,.lock-screen-inner form>button{min-height:44px}
+.lock-settings p,.lock-screen-inner form p{margin:0;font-size:13px;line-height:1.7}
+.lock-status{display:flex;align-items:center;gap:8px;color:var(--brand-strong)}
+.lock-note{font-size:12px!important;color:#788697}
+.lock-settings .preferences-row{padding:12px 0}
+.lock-settings label,.lock-screen-inner form label{text-align:left;font-size:13px}
+.lock-settings input[type="password"],.lock-screen-inner form input{min-height:44px}

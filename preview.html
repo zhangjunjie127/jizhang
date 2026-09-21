@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>在在 · 手机预览</title>
+    <style>
+      * { box-sizing: border-box; }
+      body { margin: 0; background: #e9edef; color: #262a2e; font: 14px system-ui, sans-serif; }
+      main { min-height: 100dvh; display: flex; flex-direction: column; align-items: center; padding: 12px; gap: 10px; }
+      header { width: min(390px, 100%); display: flex; align-items: center; justify-content: space-between; min-height: 32px; gap: 12px; }
+      select, button { font: inherit; border: 1px solid #cbd1d5; border-radius: 6px; background: white; padding: 6px 8px; color: inherit; }
+      button { cursor: pointer; font-size: 19px; line-height: 20px; }
+      iframe { width: min(390px, 100%); height: min(844px, calc(100dvh - 66px)); border: 0; background: white; box-shadow: 0 3px 18px #26333b1a; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <header>
+        <strong>在在</strong>
+        <select aria-label="手机屏幕尺寸">
+          <option value="390,844">390 × 844</option>
+          <option value="360,800">360 × 800</option>
+          <option value="320,740">320 × 740</option>
+        </select>
+        <button type="button" title="刷新预览" aria-label="刷新预览">&#8635;</button>
+      </header>
+      <iframe src="/?preview=phone" title="在在手机界面" allow="microphone; autoplay"></iframe>
+    </main>
+    <script type="module">
+      const frame = document.querySelector('iframe');
+      document.querySelector('select').addEventListener('change', event => {
+        const [width, height] = event.target.value.split(',').map(Number);
+        frame.style.width = `min(${width}px, 100%)`;
+        frame.style.height = `min(${height}px, calc(100dvh - 66px))`;
+      });
+      document.querySelector('button').addEventListener('click', () => frame.contentWindow.location.reload());
+    </script>
+  </body>
+</html>

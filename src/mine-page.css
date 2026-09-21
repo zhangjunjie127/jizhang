@@ -1,0 +1,33 @@
+.mine-home{max-width:760px;margin:0 auto;height:calc(100dvh - 74px);display:flex;flex-direction:column;overflow:hidden;background:#f5f6f8}
+.mine-home>.mine-page-heading,.mine-home>.mine-hero{flex-shrink:0}
+.mine-menu-scroll{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;padding-bottom:28px}
+.mine-page-heading{position:sticky;top:0;z-index:5;display:flex;align-items:center;height:64px;padding:16px 18px 0;background:var(--brand-soft)}
+.mine-page-heading h1{margin:0;font-size:22px;line-height:1.4}
+.mine-page-heading .mine-messages-entry{margin-left:auto;width:44px;height:44px;color:var(--brand-strong)}
+.mine-hero{background:var(--brand-soft);padding:env(safe-area-inset-top) 20px 22px;margin-bottom:12px}
+.mine-identity{display:flex;align-items:center;gap:14px;padding:18px 0 24px}
+.mine-avatar{display:grid;place-items:center;width:60px;height:60px;flex-shrink:0;border-radius:50%;background:#fff;border:2px solid #c5e1ff;color:var(--brand-strong);font-size:26px;font-weight:600}
+.mine-avatar-entry{padding:0;flex-shrink:0;border-radius:50%}
+.mine-avatar-entry:focus-visible{outline:2px solid var(--brand);outline-offset:3px}
+.mine-identity>div{min-width:0}
+.mine-identity h2{font-size:22px;overflow-wrap:anywhere;margin:0 0 5px}
+.mine-identity p{color:#6b7f94;font-size:12px;overflow-wrap:anywhere}
+.mine-statistics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;text-align:center}
+.mine-statistics>div{display:flex;flex-direction:column;gap:6px}
+.mine-statistics strong{font-size:25px;font-weight:650;font-variant-numeric:tabular-nums;color:#193957}
+.mine-statistics span{font-size:12px;color:#5e7590}
+.mine-menu{background:white;padding:0 18px;margin-bottom:12px}
+.mine-menu-row{display:flex;align-items:center;gap:12px;min-height:58px;width:100%;text-align:left;border-bottom:1px solid var(--line)}
+.mine-menu-row:last-child{border-bottom:0}
+.mine-menu-row>svg:first-child{color:#4275a8;flex-shrink:0}
+.mine-menu-row>span{font-size:14px;flex:1;min-width:0;overflow-wrap:anywhere}
+.mine-menu-row>small{font-size:11px;color:#8a949e}
+.mine-menu-row>svg:last-child{color:#a3abb4;flex-shrink:0}
+.mine-version{display:flex;justify-content:center;align-items:center;gap:7px;padding:10px 18px;font-size:11px;color:#8b96a1}
+.mine-version img{width:20px;height:20px;border-radius:4px}
+@media(max-width:760px){
+  .mine-home{height:calc(100dvh - 70px - env(safe-area-inset-bottom))}
+  .mine-menu-scroll{padding-bottom:20px}
+  .mine-page-heading{height:calc(64px + env(safe-area-inset-top));padding-top:calc(16px + env(safe-area-inset-top))}
+  .mine-hero{padding-top:0}
+}

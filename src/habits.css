@@ -1,0 +1,80 @@
+.habit-save{color:var(--brand-strong);font-size:14px;min-height:40px;padding:0 10px;margin-left:auto}
+.habit-editor .modal-heading h2{margin-right:auto}
+.habit-form{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;padding:0 18px 24px}
+.habit-form>fieldset{padding:0;margin:0;border:0;min-width:0}
+.habit-form-section{padding:18px 0;border-bottom:1px solid var(--line)}
+.habit-form h3,.habit-section-heading h3{font-size:14px;font-weight:600;margin:0 0 12px}
+.habit-section-heading{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;gap:12px}
+.habit-section-heading h3{margin:0}
+.habit-section-heading>button{display:flex;align-items:center;gap:6px;min-height:36px;color:#7b8794;font-size:12px}
+.habit-form label:not(.habit-switch-row){display:flex;flex-direction:column;gap:8px;font-size:13px;color:#59636b}
+.habit-form input:not([type=checkbox]),.habit-form textarea{max-width:100%;min-width:0;box-sizing:border-box}
+.habit-template-shortcuts{display:flex;gap:6px;overflow-x:auto;padding-bottom:14px;scrollbar-width:thin}
+.habit-template-shortcuts>button{display:flex;align-items:center;gap:5px;flex-shrink:0;padding:8px;background:#f3f6fa;border-radius:6px;font-size:12px;color:#627386}
+.habit-repeat-tabs{display:flex;gap:3px;background:#f4f6f9;padding:3px;border-radius:6px;margin-bottom:14px}
+.habit-repeat-tabs>button{flex:1;min-width:0;padding:9px 2px;font-size:12px;color:#8893a0;border-radius:4px}
+.habit-repeat-tabs>button[aria-pressed=true]{background:white;color:var(--brand-strong);box-shadow:0 1px 3px #1c2b4010}
+.habit-days{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px;margin-bottom:10px}
+.habit-days>button{aspect-ratio:1;max-height:42px;border-radius:50%;background:#f1f4f8;color:#8190a0;font-size:13px}
+.habit-days>button[aria-pressed=true]{background:var(--brand);color:white}
+.habit-form .habit-switch-row{display:flex;flex-direction:row;align-items:center;justify-content:space-between;gap:10px;min-height:44px;font-size:14px;color:#364654}
+.habit-switch-row>span{display:flex;align-items:center;gap:8px}
+.habit-switch-row>input{appearance:none;width:40px;height:24px;border-radius:12px;background:#dce3eb;border:0;flex-shrink:0;cursor:pointer;padding:3px;margin:0;position:relative}
+.habit-switch-row>input:before{content:"";position:absolute;width:18px;height:18px;top:3px;left:3px;border-radius:50%;background:white;box-shadow:0 1px 3px #1a283322}
+.habit-switch-row>input:checked{background:var(--brand)}
+.habit-switch-row>input:checked:before{left:19px}
+.habit-form .habit-inline-field{flex-direction:row!important;align-items:center;justify-content:space-between;margin-top:8px}
+.habit-inline-field input{width:80px}
+.habit-reminder-times{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+.habit-reminder-times>div{display:flex;align-items:center;background:#f4f6f9;border-radius:6px}
+.habit-reminder-times input{width:108px;background:transparent;border:0;padding:8px}
+.habit-reminder-times .planner-icon{width:32px}
+.habit-date-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.habit-date-fields input{position:relative;width:100%;min-height:48px;padding-right:44px;font-size:12px}
+.habit-date-fields input::-webkit-calendar-picker-indicator{position:absolute;right:0;top:50%;transform:translateY(-50%);box-sizing:content-box;width:16px;height:16px;padding:14px;margin:0;cursor:pointer}
+.habit-date-fields input:disabled::-webkit-calendar-picker-indicator{cursor:default}
+.habit-choices{width:min(520px,calc(100% - 20px));max-height:80dvh;border:0;padding:0;border-radius:8px;color:#364654;overflow-y:auto;overscroll-behavior:contain}
+.habit-choices::backdrop{background:#17233266}
+.habit-choices>header{position:sticky;top:0;background:white;z-index:1;display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid #eef1f5}
+.habit-choices h2{font-size:18px;margin:0}
+.habit-template-tabs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));padding:8px 16px;gap:2px 12px}
+.habit-template-tabs>button{flex-shrink:0;font-size:14px;color:#8994a0;padding:10px 0;border-bottom:2px solid transparent}
+.habit-template-tabs>button[aria-selected=true]{color:var(--brand-strong);border-color:var(--brand)}
+.habit-template-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;padding:12px 16px}
+.habit-template-grid>button{display:flex;gap:9px;align-items:center;min-height:76px;padding:10px;border-radius:8px;background:#f6f8fb;text-align:left;min-width:0}
+.habit-template-grid>button>span:last-child{min-width:0}
+.habit-template-grid strong{font-size:13px;font-weight:500;display:block;overflow-wrap:anywhere}
+.habit-template-grid small{display:block;font-size:11px;color:#8994a0;margin-top:4px}
+.habit-choices footer{position:sticky;bottom:0;background:white;padding:12px 16px}
+.habit-choices footer>button{width:100%}
+.habit-list-group{margin:0 0 20px}
+.habit-list-group h2{font-size:12px;color:#8a949f;font-weight:500;margin:10px 0}
+.habit-list-group h2>span{margin-left:6px}
+.habit-list-group .planner-habit{padding:12px;min-height:74px;border:0;border-radius:8px;background:#f6f8fb;margin:8px 0;gap:10px}
+.habit-list-group .planner-habit-body small{line-height:1.6;margin-top:3px}
+.habit-list-group .planner-habit-icon{border-radius:50%}
+.habit-stat-totals{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:18px 0}
+.habit-stat-totals>div{text-align:center}
+.habit-stat-totals strong{display:block;font-size:24px;color:#324a60}
+.habit-stat-totals span{font-size:11px;color:#8b96a1}
+.habit-chart{display:flex;gap:3px;height:110px;align-items:stretch;border-bottom:1px solid #e4eaf0;margin:8px 0 20px}
+.habit-chart>div{display:flex;flex:1;min-width:0;align-items:center;justify-content:flex-end;flex-direction:column;position:relative;padding-bottom:18px}
+.habit-chart i{display:block;width:75%;background:var(--brand);max-height:100%;border-radius:3px 3px 0 0}
+.habit-chart small{position:absolute;bottom:0;font-size:10px;color:#8894a1}
+.habit-stats-list>div{display:flex;align-items:center;gap:10px;padding:12px 0;border-bottom:1px solid #edf0f4}
+.habit-stats-list>div>span:nth-child(2){flex:1;min-width:0}
+.habit-stats-list strong{font-size:13px;font-weight:500;overflow-wrap:anywhere;display:block}
+.habit-stats-list small{font-size:11px;color:#8894a1;font-weight:400;display:block;margin-top:4px}
+.habit-stats-list b{font-size:15px;text-align:right}
+.habit-focus{text-align:center}
+.habit-focus>.planner-habit-icon{margin:22px auto 12px;width:56px;height:56px}
+.habit-focus h3{font-size:18px;overflow-wrap:anywhere}
+.habit-countdown{display:block;font-size:52px;font-variant-numeric:tabular-nums;line-height:1.4;color:#28465d}
+.habit-focus>p{font-size:13px;color:#8a97a4}
+.habit-focus .modal-actions{justify-content:center;margin-top:28px}
+.habit-week-actions{display:flex;align-items:center;gap:2px}
+.planner-week>button{position:relative}
+.planner-week>button:nth-child(n+6)>span{color:#de8042}
+.habit-week-holiday{position:absolute;right:0;top:22px;width:11px;height:11px;line-height:11px;font-size:8px;font-style:normal;background:#37aa77;color:white;border-radius:50%}
+.habit-week-holiday.work{background:#d56985}
+@media(max-width:600px){.habit-choices{margin:auto auto 0;width:100%;max-width:100%;border-radius:8px 8px 0 0;padding-bottom:env(safe-area-inset-bottom)}}

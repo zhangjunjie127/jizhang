@@ -1,0 +1,32 @@
+.account-service{padding:16px 20px 24px;color:#283747;min-width:0}
+.service-form{display:flex;flex-direction:column;gap:16px}
+.service-form h3,.feedback-history h3{font-size:16px;margin:0}
+.service-form fieldset{border:0;padding:0;margin:0;min-width:0;display:flex;flex-direction:column;gap:16px}
+.service-form label{display:flex;flex-direction:column;gap:8px;font-size:13px;color:#536273}
+.service-form input,.service-form select,.service-form textarea{width:100%;box-sizing:border-box;min-height:44px;font-size:15px}
+.service-form textarea{resize:vertical;line-height:1.6}
+.service-count{font-size:11px;color:#8a949e;text-align:right;margin-top:-12px}
+.service-note{font-size:12px;line-height:1.7;color:#7a8795;margin:0}
+.service-account{display:flex;align-items:center;gap:12px;padding-bottom:16px;border-bottom:1px solid var(--line);color:var(--brand-strong)}
+.service-account>div{display:flex;flex-direction:column;gap:5px;min-width:0}
+.service-account strong{font-size:16px;overflow-wrap:anywhere}
+.service-account span{font-size:12px;color:#7a8795}
+.service-submit{min-height:44px;justify-content:center}
+.service-success{display:flex;align-items:flex-start;gap:6px;color:#247647;font-size:13px;line-height:1.6}
+.service-success svg{flex-shrink:0;margin-top:2px}
+.feedback-history{margin-top:28px;padding-top:20px;border-top:1px solid var(--line)}
+.feedback-history>p{margin-top:12px}
+.feedback-history article{padding:16px 0;border-bottom:1px solid var(--line)}
+.feedback-history article header{display:flex;align-items:center;justify-content:space-between;gap:12px;font-size:13px}
+.feedback-history article header span{color:var(--brand-strong);font-size:12px}
+.feedback-history article p{white-space:pre-wrap;overflow-wrap:anywhere;font-size:13px;line-height:1.7;margin:8px 0}
+.feedback-history article small{color:#8894a1;font-size:11px}
+.service-help details{border-bottom:1px solid var(--line);padding:16px 0}
+.service-help summary{font-size:14px;line-height:1.6;cursor:pointer}
+.service-help details p{font-size:13px;color:#647383;line-height:1.8;margin-top:12px}
+.service-version{text-align:center}
+.service-version>img{width:64px;height:64px;border-radius:8px;margin:12px 0}
+.service-version h3{font-size:22px;margin-bottom:8px}
+.service-version>p{font-size:13px;color:#778594;line-height:1.7}
+.service-version h4{text-align:left;font-size:15px;margin-top:32px}
+.service-version ul{text-align:left;padding-left:20px;font-size:13px;line-height:2;color:#536273;margin:12px 0 24px}

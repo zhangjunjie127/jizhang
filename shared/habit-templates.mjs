@@ -1,0 +1,65 @@
+export const HABIT_TEMPLATE_CATEGORIES = ['健康', '学习', '运动', '生活', '工作', '情感'];
+const weekdays = [0, 1, 2, 3, 4];
+const weekend = [5, 6];
+
+export const HABIT_TEMPLATES = [
+  ['早起', 'sun', '健康', '07:00', 'amber'],
+  ['早睡', 'moon', '健康', '22:00', 'violet'],
+  ['吃水果', 'apple', '健康', '13:00', 'rose'],
+  ['喝8杯水', 'water', '健康', '11:00', 'blue'],
+  ['吃早餐', 'breakfast', '健康', '08:00', 'amber'],
+  ['戒烟', 'smoke', '健康', '', 'teal'],
+  ['戒酒', 'wine', '健康', '', 'rose'],
+  ['体重记录', 'scale', '健康', '08:00', 'green', { weekdays: [0] }],
+  ['少吃零食', 'snack', '健康', '', 'violet'],
+  ['按时吃药', 'pill', '健康', '', 'blue'],
+  ['阅读', 'book', '学习', '20:30', 'blue', { focus: true, focusMinutes: 20 }],
+  ['背单词', 'study', '学习', '08:00', 'violet', { focus: true, focusMinutes: 15 }],
+  ['练习写作', 'pen', '学习', '20:00', 'teal', { weekdays: [1, 3, 5], focus: true }],
+  ['复习笔记', 'study', '学习', '21:00', 'green', { weekdays }],
+  ['练习听力', 'study', '学习', '19:30', 'blue', { weekdays, focus: true, focusMinutes: 15 }],
+  ['练习口语', 'study', '学习', '20:00', 'rose', { weekdays: [0, 2, 4] }],
+  ['学习新课程', 'book', '学习', '10:00', 'violet', { weekdays: weekend, focus: true }],
+  ['整理错题', 'pen', '学习', '16:00', 'amber', { weekdays: [6] }],
+  ['运动', 'exercise', '运动', '18:30', 'green', { repeat: 'week-flex', targetCount: 3 }],
+  ['散步', 'walk', '运动', '19:00', 'teal'],
+  ['拉伸', 'exercise', '运动', '21:00', 'rose'],
+  ['跑步', 'walk', '运动', '18:30', 'blue', { weekdays: [0, 2, 4] }],
+  ['瑜伽', 'exercise', '运动', '19:30', 'violet', { weekdays: [1, 3, 5] }],
+  ['骑行', 'exercise', '运动', '09:00', 'teal', { weekdays: [5] }],
+  ['游泳', 'exercise', '运动', '15:00', 'blue', { repeat: 'week-flex', targetCount: 2 }],
+  ['力量训练', 'exercise', '运动', '18:30', 'amber', { weekdays: [1, 3, 5] }],
+  ['每日记账', 'pen', '生活', '21:00', 'blue'],
+  ['整理房间', 'target', '生活', '10:00', 'teal', { weekdays: [5] }],
+  ['清理桌面', 'target', '生活', '21:30', 'green'],
+  ['洗衣服', 'water', '生活', '10:00', 'blue', { weekdays: [2, 6] }],
+  ['浇花', 'water', '生活', '', 'green', { repeat: 'week-flex', targetCount: 2 }],
+  ['采购日用品', 'target', '生活', '15:00', 'amber', { weekdays: [5] }],
+  ['整理相册', 'target', '生活', '20:00', 'violet', { repeat: 'monthly', monthDays: [1] }],
+  ['备好明日用品', 'target', '生活', '21:30', 'rose'],
+  ['制定今日计划', 'target', '工作', '09:00', 'blue', { weekdays, skipHolidays: true }],
+  ['专注工作', 'target', '工作', '09:30', 'green', { weekdays, skipHolidays: true, focus: true }],
+  ['整理工作邮件', 'pen', '工作', '10:00', 'teal', { weekdays, skipHolidays: true }],
+  ['下班复盘', 'pen', '工作', '17:30', 'violet', { weekdays, skipHolidays: true }],
+  ['整理工作文件', 'target', '工作', '16:30', 'blue', { weekdays: [4], skipHolidays: true }],
+  ['制定下周计划', 'target', '工作', '17:00', 'amber', { weekdays: [4], skipHolidays: true }],
+  ['整理会议记录', 'pen', '工作', '16:00', 'green', { weekdays, skipHolidays: true }],
+  ['月度总结', 'pen', '工作', '17:00', 'rose', { repeat: 'monthly', monthDays: [28] }],
+  ['记录心情', 'smile', '情感', '21:00', 'amber'],
+  ['联系家人', 'heart', '情感', '19:30', 'rose', { weekdays: [2, 6] }],
+  ['写感恩日记', 'pen', '情感', '21:30', 'violet'],
+  ['陪伴家人', 'heart', '情感', '20:00', 'rose'],
+  ['联系朋友', 'heart', '情感', '19:00', 'teal', { weekdays: [5] }],
+  ['安静独处', 'moon', '情感', '20:30', 'violet', { focus: true, focusMinutes: 10 }],
+  ['记录开心小事', 'smile', '情感', '21:30', 'amber'],
+  ['表达感谢', 'heart', '情感', '', 'green'],
+].map(([title, icon, category, time, tone, settings = {}]) => ({
+  title, icon, category, time, tone,
+  repeat: 'weekly', weekdays: [0, 1, 2, 3, 4, 5, 6], monthDays: [1], targetCount: 3,
+  skipHolidays: false, focus: false, focusMinutes: 25, ...settings,
+}));
+
+export function habitTemplateFields(template) {
+  const { category, time, ...fields } = template;
+  return { ...fields, weekdays: [...fields.weekdays], monthDays: [...fields.monthDays], reminders: time ? [time] : [] };
+}

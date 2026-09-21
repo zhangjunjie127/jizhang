@@ -1,0 +1,37 @@
+.assistant-edge{position:fixed;right:-20px;bottom:calc(120px + env(safe-area-inset-bottom));z-index:39;width:48px;height:68px;border-radius:8px 0 0 8px;display:flex;align-items:center;padding:0 0 0 4px;background:var(--brand-strong);color:white;box-shadow:0 2px 8px #0002;touch-action:none}
+.assistant-edge>svg{width:21px;height:21px;flex-shrink:0}
+.assistant-edge.dock-left{border-radius:0 8px 8px 0;padding:0 4px 0 0;justify-content:flex-end}
+.assistant-edge.in-call{background:#11875b}
+.assistant-edge i{position:absolute;left:5px;top:7px;width:7px;height:7px;background:#f57a69;border:1px solid white;border-radius:50%}
+.assistant-edge.dock-left i{left:auto;right:5px}
+.workspace>.chat-page.assistant-panel{position:fixed;z-index:40;right:8px;bottom:calc(82px + env(safe-area-inset-bottom));width:min(390px,calc(100% - 16px));height:min(570px,calc(100dvh - 180px));min-height:210px;max-height:calc(100dvh - 100px);padding:0;display:flex;flex-direction:column;border:1px solid #dbe2eb;border-radius:8px;background:white;box-shadow:0 4px 24px #0002;overflow:hidden}
+.assistant-panel .chat-heading{padding:10px;gap:6px;min-height:52px;background:#edf5ff}
+.assistant-panel .chat-heading>.avatar{width:30px;height:30px;flex-shrink:0}
+.assistant-panel .chat-heading>div{min-width:0}
+.assistant-panel .chat-heading strong{font-size:13px}
+.assistant-panel .chat-heading small{font-size:10px}
+.assistant-panel .chat-heading .icon-button{width:36px;height:36px;flex-shrink:0}
+.assistant-panel .messages{padding:14px 10px;overscroll-behavior:contain}
+.assistant-panel .message{gap:6px}
+.assistant-panel .message>div{min-width:0;max-width:85%}
+.assistant-panel .bubble{overflow-wrap:anywhere}
+.assistant-panel .chat-welcome{padding:12px 0}
+.assistant-panel .chat-welcome .large{width:50px;height:50px}
+.assistant-panel .chat-welcome h2{font-size:18px}
+.assistant-panel .chat-welcome p{margin:8px 0}
+.assistant-panel .suggestions{margin-top:12px}
+.assistant-panel .composer{flex-shrink:0;padding:8px;gap:4px}
+.assistant-panel .composer textarea{min-width:0;font-size:14px}
+.assistant-panel .composer .icon-button{width:36px;height:40px;flex-shrink:0}
+.assistant-panel .pending-chat{flex-shrink:0;margin:0;padding:8px;font-size:12px}
+.assistant-call-controls{display:flex;align-items:center;gap:8px;flex-shrink:0;padding:6px 10px;background:#f0faf5;border-top:1px solid #dfede4}
+.assistant-call-controls>span{flex:1;min-width:0;font-size:12px;color:#176c49}
+.assistant-call-controls time{font-size:12px;font-variant-numeric:tabular-nums}
+.assistant-call-controls .icon-button{color:#4e626f}
+.assistant-call-controls .hangup{background:#fee9e7;color:#c53e35}
+.assistant-call-controls .mic-active{color:#087e49;background:#d7f4e4}
+.native-assistant-host .sidebar,.native-assistant-host .topbar,.native-assistant-host .mobile-nav{display:none}
+.native-assistant-host .workspace{margin:0;padding:0;height:100dvh;overflow:hidden}
+.native-assistant-host .workspace>.assistant-panel{inset:0;width:100%;height:100dvh;min-height:0;max-height:none;border:0;border-radius:0;box-shadow:none}
+.native-assistant-host .modal-backdrop{padding:8px}
+.native-assistant-host .toast{bottom:12px}

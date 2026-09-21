@@ -1,0 +1,12 @@
+{
+  "appId": "cn.zaizai.companion",
+  "appName": "在在",
+  "webDir": "dist",
+  "server": {
+    "androidScheme": "https",
+    "cleartext": true
+  },
+  "android": {
+    "allowMixedContent": true
+  }
+}
