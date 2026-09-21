@@ -35,12 +35,22 @@ function WeekStrip({ selected, onSelect, today, future = true }) {
     })}
   </div>;
 }
-function PlannerEditor({ Modal, entry, defaults, kind, day, myTeacher, onClose, onSave, onDelete, onCreated }) {
+function PlannerEditor({ Modal, entry, defaults, kind, day, myTeacher, courses = [], onClose, onSave, onDelete, onCreated }) {
   const p = entry?.payload || defaults;
   const [days, setDays] = useState(p?.weekdays || [day]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const key = useRef(requestId());
+  const history = courses.filter(item => item.kind === 'course').slice().sort((a, b) => b.created.localeCompare(a.created));
+  function fillHistory(event) {
+    const previous = history.find(item => item.id === event.target.value)?.payload;
+    if (!previous) return;
+    const fields = event.currentTarget.form.elements;
+    for (const field of ['title', 'className', 'teacher', 'room', 'note']) fields.namedItem(field).value = previous[field] || '';
+    fields.namedItem('order').value = defaults?.order ?? previous.order;
+    setDays(defaults?.weekdays || previous.weekdays);
+    setError('');
+  }
   async function submit(event) {
     event.preventDefault();
     if (busy) return;
@@ -56,6 +66,11 @@ function PlannerEditor({ Modal, entry, defaults, kind, day, myTeacher, onClose, 
   const name = '课程';
   return <Modal fullScreen className="planner-editor course-editor" title={`${entry ? '编辑' : '新建'}${name}`} onClose={busy ? () => {} : onClose}>
     <form className="record-form" onSubmit={submit}>
+      {!entry && <label>历史课程<select aria-label="历史课程" defaultValue="" disabled={busy || !history.length} onChange={fillHistory}>
+        <option value="" disabled>{history.length ? '选择已保存的课程' : '暂无历史课程'}</option>
+        {history.map(item => <option key={item.id} value={item.id}>{[item.payload.title, item.payload.className || '未分班',
+          item.payload.teacher, `${item.payload.weekdays.map(day => WEEKDAYS[day]).join('、')} 第${item.payload.order}节`].filter(Boolean).join(' · ')}</option>)}
+      </select></label>}
       <label>{name}名称<input name="title" maxLength={80} required defaultValue={p?.title || ''} placeholder="例如：英语" autoFocus /></label>
       <label>班级<input name="className" maxLength={40} required={Boolean(defaults?.requireClass)} defaultValue={p?.className || ''} placeholder="例如：七年级一班" /></label>
       <fieldset><legend>上课星期</legend><div className="planner-week-options">{WEEKDAYS.map((label, index) => <label key={label}><input type="checkbox" checked={days.includes(index)} onChange={event => setDays(previous => event.target.checked ? [...previous, index].sort() : previous.filter(day => day !== index))} /><span>{label}</span></label>)}</div></fieldset>
@@ -237,7 +252,7 @@ export function Planner({ records, Modal, onCreateTask, onEditTask, onComplete, 
       <div className="modal-actions"><button className="secondary" onClick={() => setDialog({ type: 'anniversary' })}>添加纪念日</button><button className="primary" onClick={() => { onCreateTask({ scheduledDate: dialog.date }); setDialog(null); }}>添加待办</button></div>
     </Modal>}
     {dialog?.type === 'categories' && <Modal title="清单分类" className="planner-dialog" onClose={() => setDialog(null)}><div className="planner-category-list">{[{ label: '', color: '' }, ...TASK_CATEGORIES].map(item => <button key={item.label} aria-pressed={category === item.label} onClick={() => { setCategory(item.label); if (!['list', 'calendar'].includes(view)) setView('list'); setDialog(null); }}>{item.color ? <TaskCategoryIcon category={item.label} /> : <ListChecks size={18} />}<span>{item.label || '全部分类'}</span><small>{filterTasks(records, 'all', item.label).length}</small>{category === item.label && <Check size={17} />}</button>)}</div></Modal>}
-    {dialog?.type === 'edit' && (dialog.kind === 'habit' ? <HabitEditor Modal={Modal} key={dialog.entry?.id || 'habit'} entry={dialog.entry} onClose={() => setDialog(null)} onSave={save} onDelete={() => setDialog({ type: 'delete', entry: dialog.entry })} /> : <PlannerEditor Modal={Modal} key={dialog.entry?.id || dialog.kind} entry={dialog.entry} defaults={dialog.defaults} onCreated={dialog.onCreated} kind={dialog.kind} day={courseDay} myTeacher={data.courseSettings?.myTeacher} onClose={() => setDialog(null)} onSave={save} onDelete={() => setDialog({ type: 'delete', entry: dialog.entry })} />)}
+    {dialog?.type === 'edit' && (dialog.kind === 'habit' ? <HabitEditor Modal={Modal} key={dialog.entry?.id || 'habit'} entry={dialog.entry} onClose={() => setDialog(null)} onSave={save} onDelete={() => setDialog({ type: 'delete', entry: dialog.entry })} /> : <PlannerEditor Modal={Modal} key={dialog.entry?.id || dialog.kind} entry={dialog.entry} defaults={dialog.defaults} courses={data.items} onCreated={dialog.onCreated} kind={dialog.kind} day={courseDay} myTeacher={data.courseSettings?.myTeacher} onClose={() => setDialog(null)} onSave={save} onDelete={() => setDialog({ type: 'delete', entry: dialog.entry })} />)}
     {dialog?.type === 'habit-stats' && <HabitStats Modal={Modal} habits={habits} checks={data.checks} today={today} onClose={() => setDialog(null)} />}
     {focusSession && focusHabit && <HabitFocus Modal={Modal} entry={focusHabit} session={focusSession} storageKey={focusKey} onClose={() => setFocusSession(null)} onComplete={checkHabit} />}
     {dialog?.type === 'habits' && <Modal title="全部习惯" onClose={() => setDialog(null)}><div className="planner-manage-list">{habits.map(item => <button key={item.id} onClick={() => setDialog({ type: 'history', entry: item })}><HabitIcon icon={item.payload.icon} size={18} /><span>{item.payload.title}<small>{habitRepeatLabel(item.payload)}</small></span><ChevronRight size={16} /></button>)}{!habits.length && <p>还没有习惯</p>}<button onClick={() => setDialog({ type: 'edit', kind: 'habit' })}><Plus size={18} />新建习惯</button></div></Modal>}

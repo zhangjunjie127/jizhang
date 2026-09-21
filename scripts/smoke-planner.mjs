@@ -510,11 +510,29 @@ try {
   await page.getByRole('button', { name: '确认删除', exact: true }).click();
   await page.setViewportSize({ width: 390, height: 844 });
   await views.getByRole('tab', { name: '课程表', exact: true }).click();
-  await page.getByRole('button', { name: '作息与提醒', exact: true }).waitFor();
+  await page.getByRole('button', { name: '代课记录', exact: true }).waitFor();
+  assert.equal(await page.locator('.course-controls .planner-icon').count(), 0);
+  await page.getByRole('button', { name: '代课记录', exact: true }).click();
+  await page.getByText('请选择班级', { exact: true }).waitFor();
+  assert.equal(await page.locator('.planner-course-grid').count(), 0);
+  assert.equal(await page.getByRole('dialog').count(), 0);
+  await page.getByRole('button', { name: '我的授课', exact: true }).click();
+  assert.equal(await page.getByRole('button', { name: '作息与提醒', exact: true }).count(), 0);
   assert.equal(await page.getByRole('button', { name: '设置授课姓名', exact: true }).count(), 0);
-  assert.equal(await page.locator('.course-summary').count(), 0);
-  await page.getByRole('button', { name: '作息与提醒', exact: true }).click();
+  assert.equal(await page.locator('.course-summary').innerText(), '今日 0 节\n已上 0\n剩余 0');
+  assert.equal(await page.locator('.course-now').innerText(), '当前：无课\n下一节：今日无后续课程');
+  await page.getByRole('button', { name: '添加周四第5节课程', exact: true }).click();
   await page.getByLabel('我的授课姓名', { exact: true }).waitFor();
+  assert.equal(await page.locator('.course-editor .error-box').count(), 0);
+  await page.getByRole('switch', { name: '课前提醒', exact: true }).scrollIntoViewIfNeeded();
+  const reminderScroll = await page.locator('.course-editor .record-form').evaluate(el => el.scrollTop);
+  await page.getByRole('switch', { name: '课前提醒', exact: true }).click();
+  await page.getByRole('status').filter({ hasText: '请先填写我的授课姓名' }).waitFor();
+  assert.equal(await page.locator('.course-editor .error-box').count(), 0);
+  assert.equal(await page.locator('.course-editor .record-form').evaluate(el => el.scrollTop), reminderScroll);
+  assert.equal(await page.getByLabel('我的授课姓名', { exact: true }).evaluate(el => el === document.activeElement), false);
+  await page.getByRole('status').filter({ hasText: '请先填写我的授课姓名' }).waitFor({ state: 'hidden', timeout: 8000 });
+  assert.equal(await page.getByRole('switch', { name: '课前提醒', exact: true }).isChecked(), false);
   await page.getByRole('button', { name: '取消', exact: true }).click();
   assert.equal(await page.getByLabel('授课老师', { exact: true }).count(), 0);
   assert.equal(await page.locator('.course-empty-slot').count(), 49);
@@ -532,6 +550,7 @@ try {
     await page.screenshot({ path: `artifacts/course-empty-grid-${width}.png` });
   }
   await page.getByRole('button', { name: '添加周二第3节课程', exact: true }).click();
+  assert.equal(await page.getByLabel('历史课程', { exact: true }).isDisabled(), true);
   assert.equal(await page.getByLabel('周二', { exact: true }).isChecked(), true);
   assert.equal(await page.locator('.planner-week-options input:checked').count(), 1);
   assert.equal(await page.getByLabel('课程顺序', { exact: true }).inputValue(), '3');
@@ -565,7 +584,8 @@ try {
   await page.getByRole('button', { name: '保存', exact: true }).click();
   assert.equal(await page.locator('.planner-course').count(), 0);
   await page.getByRole('button', { name: '班级课表', exact: true }).click();
-  assert.equal(await page.locator('.course-summary, .course-now').count(), 0);
+  assert.equal(await page.locator('.course-summary, .course-now').count(), 2);
+  assert.equal(await page.locator('.course-summary strong').innerText(), '0');
   assert.equal(await page.locator('.course-empty-slot').count(), 49);
   assert.equal(await page.getByLabel('班级选择', { exact: true }).locator('option').filter({ hasText: '全部班级' }).count(), 0);
   await page.getByLabel('班级选择', { exact: true }).selectOption('七年级一班');
@@ -580,15 +600,22 @@ try {
   await page.getByRole('button', { name: '周一第1节 二班数学', exact: true }).waitFor();
   assert.equal(await page.getByRole('button', { name: '周一第2节 英语', exact: true }).count(), 0);
   await page.getByLabel('班级选择', { exact: true }).selectOption('');
-  assert.equal(await page.locator('.course-summary, .course-now').count(), 0);
+  assert.equal(await page.locator('.course-summary, .course-now').count(), 2);
+  assert.equal(await page.locator('.course-summary strong').innerText(), '0');
   assert.equal(await page.locator('.course-empty-slot').count(), 49);
   await page.getByLabel('班级选择', { exact: true }).selectOption('七年级一班');
   await page.getByRole('button', { name: '我的授课', exact: true }).click();
   await page.getByRole('button', { name: '添加周四第5节课程', exact: true }).click();
   await page.getByLabel('我的授课姓名', { exact: true }).fill('陈老师');
   assert.equal(await page.getByRole('switch', { name: '课前提醒', exact: true }).isChecked(), false);
-  assert.equal(await page.getByRole('switch', { name: '课前提醒', exact: true }).isDisabled(), true);
+  assert.equal(await page.getByRole('switch', { name: '课前提醒', exact: true }).isEnabled(), true);
+  await page.getByRole('switch', { name: '课前提醒', exact: true }).click();
+  await page.getByRole('status').filter({ hasText: '请先勾选“已核对作息时间”' }).waitFor();
+  assert.equal(await page.getByRole('switch', { name: '课前提醒', exact: true }).isChecked(), false);
   await page.getByLabel('已核对作息时间', { exact: true }).check();
+  await page.getByRole('switch', { name: '课前提醒', exact: true }).check();
+  await page.getByLabel('提前分钟数', { exact: true }).waitFor();
+  await page.getByRole('switch', { name: '课前提醒', exact: true }).uncheck();
   await page.getByRole('button', { name: '保存', exact: true }).click();
   await page.getByRole('dialog', { name: '作息与提醒', exact: true }).waitFor({ state: 'hidden' });
   await page.getByRole('dialog', { name: '新建课程', exact: true }).waitFor();
@@ -598,6 +625,12 @@ try {
   assert.equal(await page.getByLabel('班级', { exact: true }).inputValue(), '七年级一班');
   await page.getByRole('button', { name: '取消', exact: true }).click();
   await page.getByRole('button', { name: '添加周五第6节课程', exact: true }).click();
+  const historySource = (await api('/planner')).items.find(item => item.payload.title === '英语');
+  await page.getByLabel('历史课程', { exact: true }).selectOption(historySource.id);
+  assert.equal(await page.getByLabel('课程名称', { exact: true }).inputValue(), '英语');
+  assert.equal(await page.getByLabel('班级', { exact: true }).inputValue(), '七年级一班');
+  assert.equal(await page.getByLabel('教室', { exact: true }).inputValue(), '教学楼 302');
+  assert.equal(await page.locator('.planner-week-options input:checked').count(), 1);
   assert.equal(await page.getByRole('dialog', { name: '作息与提醒', exact: true }).count(), 0);
   assert.equal(await page.getByLabel('周五', { exact: true }).isChecked(), true);
   assert.equal(await page.getByLabel('课程顺序', { exact: true }).inputValue(), '6');
@@ -605,6 +638,7 @@ try {
   await page.getByRole('button', { name: '取消', exact: true }).click();
   assert.equal((await api('/planner')).courseSettings.myTeacher, '陈老师');
   assert.equal((await api('/planner')).courseSettings.reminders, false);
+  assert.deepEqual((await api('/planner')).items.find(item => item.id === historySource.id), historySource);
   await page.getByLabel('班级选择', { exact: true }).selectOption('七年级二班');
   assert.equal(await page.locator('.planner-course').count(), 0);
   await page.getByLabel('班级选择', { exact: true }).selectOption('七年级一班');
@@ -619,10 +653,60 @@ try {
     }), true, `Course dates stay inside headers and clear the first row at ${width}x${height}`);
     await page.screenshot({ path: `artifacts/course-compact-${width}.png` });
     assert.equal(await page.locator('.planner-course-scroll').evaluate(el => el.scrollHeight > el.clientHeight + 1), false, `Course grid fits ${width}x${height}: ${await page.locator('.course-board').evaluate(el => JSON.stringify([...el.children].map(child => [child.className, child.getBoundingClientRect().height])))}`);
+    for (const mode of ['班级课表', '我的授课']) {
+      await page.getByRole('button', { name: mode, exact: true }).click();
+      assert.equal(await page.locator('.course-filters').evaluate(el => {
+        const button = el.querySelector('.planner-today');
+        const box = button.getBoundingClientRect();
+        const previous = button.previousElementSibling.getBoundingClientRect();
+        return box.width >= 44 && box.left >= previous.right
+          && box.right <= el.getBoundingClientRect().right && button.scrollWidth <= button.clientWidth;
+      }), true, `${mode} this-week button has reserved space at ${width}px`);
+      assert.equal(await page.locator('.course-status-band').evaluate(el => {
+        const grid = el.parentElement.querySelector('.planner-course-grid');
+        return getComputedStyle(el).backgroundColor === 'rgb(240, 244, 248)'
+          && grid.getBoundingClientRect().top - el.getBoundingClientRect().bottom >= 10;
+      }), true, `${mode} status band has background and space above timetable`);
+      assert.equal(await page.getByRole('button', { name: '作息与提醒', exact: true }).count(), 0);
+      assert.equal(await page.getByRole('button', { name: '代课记录', exact: true }).isVisible(), true);
+      assert.equal(await page.locator('.course-now').evaluate(el => {
+        const [current, next] = [...el.children].map(child => child.getBoundingClientRect());
+        return Math.abs(current.top - next.top) < 1 && next.left - current.right >= 8
+          && next.right <= el.getBoundingClientRect().right;
+      }), true, `${mode} current and next lessons share a row without overlap at ${width}px`);
+      assert.equal(await page.locator('.course-filters').evaluate(el => {
+        const box = el.getBoundingClientRect();
+        return [...el.children].every(child => {
+          const bounds = child.getBoundingClientRect();
+          return bounds.top - box.top >= 8 && box.bottom - bounds.bottom >= 8;
+        });
+      }), true, `${mode} filters have vertical breathing room at ${width}px`);
+      assert.equal(await page.locator('.planner-course-scroll').evaluate(el => el.scrollHeight > el.clientHeight + 1), false);
+      assert.equal(await page.locator('.planner-course-grid tbody tr').count(), 7);
+      await page.screenshot({ path: `artifacts/course-spacing-${mode === '我的授课' ? 'mine' : 'class'}-${width}.png` });
+    }
   }
   await page.setViewportSize({ width: 390, height: 844 });
   await createFromMenu('新建课程');
   assert.equal(await page.getByLabel('老师', { exact: true }).inputValue(), '陈老师');
+  await page.getByLabel('历史课程', { exact: true }).selectOption(historySource.id);
+  assert.equal(await page.getByLabel('课程顺序', { exact: true }).inputValue(), '2');
+  assert.equal(await page.getByLabel('周一', { exact: true }).isChecked(), true);
+  await page.getByLabel('课程名称').fill('历史微调课程');
+  await page.getByLabel('备注', { exact: true }).fill('历史填入后微调');
+  await page.getByLabel('课程顺序', { exact: true }).fill('7');
+  await page.getByRole('button', { name: '保存', exact: true }).click();
+  await page.getByRole('button', { name: '周一第7节 历史微调课程', exact: true }).click();
+  await page.getByRole('button', { name: '编辑每周课程', exact: true }).click();
+  await page.getByRole('dialog', { name: '编辑课程', exact: true }).waitFor();
+  await page.screenshot({ path: 'artifacts/course-history-edit.png' });
+  assert.equal(await page.getByLabel('历史课程', { exact: true }).count(), 0);
+  assert.equal(await page.locator('textarea[name="note"]').inputValue(), '历史填入后微调');
+  assert.deepEqual((await api('/planner')).items.find(item => item.id === historySource.id), historySource);
+  await page.getByRole('button', { name: '删除课程', exact: true }).click();
+  await page.getByRole('button', { name: '确认删除', exact: true }).click();
+  await createFromMenu('新建课程');
+  assert.equal(await page.getByLabel('历史课程', { exact: true }).locator('option').filter({ hasText: '历史微调课程' }).count(), 0);
   await page.getByRole('button', { name: '取消', exact: true }).click();
   await page.getByRole('button', { name: '周一第2节 英语', exact: true }).click();
   await page.getByLabel('教学进度与备课备注', { exact: true }).fill('讲到第二章，准备听力材料');
@@ -648,7 +732,14 @@ try {
   await page.getByRole('button', { name: '保存本次', exact: true }).click();
   await page.getByRole('dialog', { name: '本次课程', exact: true }).waitFor({ state: 'hidden' });
   assert.equal(await page.locator('.planner-course').count(), 0);
-  await page.getByRole('button', { name: '调代课记录', exact: true }).click();
+  await page.getByRole('button', { name: '代课记录', exact: true }).click();
+  assert.equal(await page.getByRole('dialog').count(), 0);
+  assert.equal(await page.locator('.planner-course-grid').count(), 0);
+  assert.equal(await page.getByLabel('班级选择', { exact: true }).inputValue(), '七年级一班');
+  await page.getByLabel('班级选择', { exact: true }).selectOption('七年级二班');
+  await page.getByText('暂无代课记录', { exact: true }).waitFor();
+  await page.getByLabel('班级选择', { exact: true }).selectOption('七年级一班');
+  await page.screenshot({ path: 'artifacts/course-history-page.png' });
   await page.locator('.course-history-row').first().click();
   await page.getByRole('button', { name: '恢复原安排', exact: true }).click();
   await page.getByRole('button', { name: '保存本次', exact: true }).click();
@@ -666,11 +757,32 @@ try {
   mkdirSync('artifacts', { recursive: true });
   for (const width of [320, 390, 430]) {
     await page.setViewportSize({ width, height: 844 });
+    let moduleHeading;
+    for (const module of ['记账', '健康', '待办']) {
+      await nav.getByRole('button', { name: module, exact: true }).click();
+      const selector = module === '待办' ? '.planner-heading' : '.records-page>.page-heading';
+      await page.locator(selector).waitFor();
+      const metrics = await page.locator(selector).evaluate(el => {
+        const title = el.querySelector('h1'), box = title.getBoundingClientRect(), band = el.getBoundingClientRect();
+        return { x: box.x, y: box.y, fontSize: getComputedStyle(title).fontSize,
+          background: getComputedStyle(el).backgroundColor, bandX: band.x, bandWidth: band.width, bandHeight: band.height };
+      });
+      moduleHeading ??= metrics;
+      assert.deepEqual(metrics, moduleHeading, `${module} heading matches ledger at ${width}px`);
+      await page.screenshot({ path: `artifacts/module-heading-${module === '记账' ? 'ledger' : module === '健康' ? 'health' : 'planner'}-${width}.png` });
+    }
+    let headingGeometry;
     for (const [view, key] of [['清单', 'list'], ['日历', 'calendar'], ['打卡', 'habits'], ['课程表', 'courses']]) {
       if (key === 'list') await showList();
       else await views.getByRole('tab', { name: view, exact: true }).click();
       await page.getByRole('tabpanel').waitFor();
       assert.equal(await page.locator('.planner-heading button').count(), 0);
+      const heading = await page.locator('.planner-heading h1').evaluate(el => {
+        const box = el.getBoundingClientRect(), style = getComputedStyle(el);
+        return { x: box.x, y: box.y, height: box.height, fontSize: style.fontSize, fontWeight: style.fontWeight };
+      });
+      headingGeometry ??= heading;
+      assert.deepEqual(heading, headingGeometry, `Planner headings match across views at ${width}px`);
       assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
       const scrollArea = page.locator(key === 'calendar' ? '.planner-month-board' : '.planner-scroll');
       assert(await scrollArea.evaluate(el => el.clientHeight) > 100);

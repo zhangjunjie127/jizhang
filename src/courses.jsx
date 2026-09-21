@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { ChevronLeft, ChevronRight, Clock3, Plus, Trash2, Pencil, History, CircleAlert } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Plus, Trash2, Pencil, CircleAlert } from 'lucide-react';
 import { WEEKDAYS, plannerToday, weekday, shiftDate } from '../shared/planner.mjs';
 import { courseLessons, courseConflicts, defaultCourseSettings, lessonTime } from '../shared/courses.mjs';
 import { DateInput } from './date-picker';
@@ -10,9 +10,9 @@ import './courses.css';
 function Icon({ label, icon: Glyph, ...props }) {
   return <button type="button" className="planner-icon" aria-label={label} title={label} {...props}><Glyph size={19} /></button>;
 }
-function Settings({ Modal, value, onSave, onClose }) {
+function Settings({ Modal, value, onSave, onClose, onNotify }) {
   const [draft, setDraft] = useState(value), [error, setError] = useState(''), [busy, setBusy] = useState(false);
-  const update = patch => setDraft(previous => ({ ...previous, ...patch }));
+  const update = patch => { setDraft(previous => ({ ...previous, ...patch })); setError(''); };
   return <Modal fullScreen className="planner-editor course-editor" title="作息与提醒" onClose={busy ? () => {} : onClose}>
     <form className="record-form" onSubmit={async event => {
       event.preventDefault(); if (busy) return; setBusy(true); setError('');
@@ -28,7 +28,17 @@ function Settings({ Modal, value, onSave, onClose }) {
       <div className="course-bell-actions"><Icon label="增加节次" icon={Plus} disabled={draft.bells.length >= 20} onClick={() => update({ bells: [...draft.bells, { start: '', end: '' }], confirmed: false, reminders: false })} />
         <Icon label="删除最后节次" icon={Trash2} disabled={draft.bells.length <= 1} onClick={() => update({ bells: draft.bells.slice(0, -1), confirmed: false, reminders: false })} /></div>
       <label className="course-switch"><span>已核对作息时间</span><input type="checkbox" checked={draft.confirmed} onChange={event => update({ confirmed: event.target.checked, reminders: event.target.checked && draft.reminders })} /></label>
-      <label className="course-switch"><span>课前提醒</span><input type="checkbox" role="switch" disabled={!draft.confirmed || !draft.myTeacher.trim()} checked={draft.reminders} onChange={event => update({ reminders: event.target.checked })} /></label>
+      <label className="course-switch"><span>课前提醒</span><input type="checkbox" role="switch" disabled={busy} checked={draft.reminders} onChange={event => {
+        if (event.target.checked && !draft.myTeacher.trim()) {
+          onNotify('请先填写我的授课姓名，以便匹配需要提醒的课程');
+          return;
+        }
+        if (event.target.checked && !draft.confirmed) {
+          onNotify('请先勾选“已核对作息时间”，再开启课前提醒');
+          return;
+        }
+        update({ reminders: event.target.checked });
+      }} /></label>
       {draft.reminders && <label>提前分钟数<input type="number" min={0} max={120} required value={draft.leadMinutes} onChange={event => update({ leadMinutes: Number(event.target.value) })} /></label>}
       {error && <p className="error-box" role="alert">{error}</p>}
       <div className="modal-actions"><button type="button" className="secondary" disabled={busy} onClick={onClose}>取消</button><button className="primary" disabled={busy}>保存</button></div>
@@ -118,23 +128,21 @@ export function CourseBoard({ data, Modal, mutate, records, onNotify, onEdit, on
   }
   return <div className="course-board">
     <div className="course-controls">
-      <div className="task-reminder-modes" role="group" aria-label="课表视图">{[['mine', '我的授课'], ['class', '班级课表']].map(([value, label]) =>
+      <div className="task-reminder-modes" role="group" aria-label="课表视图">{[['mine', '我的授课'], ['class', '班级课表'], ['history', '代课记录']].map(([value, label]) =>
         <button key={value} aria-pressed={mode === value} onClick={() => setMode(value)}>{label}</button>)}</div>
-      <Icon label="作息与提醒" icon={Clock3} onClick={() => setDialog({ type: 'settings' })} />
-      <Icon label="调代课记录" icon={History} onClick={() => setDialog({ type: 'history' })} />
     </div>
     <div className="course-filters">
       <select aria-label="班级选择" value={className} onChange={event => setClassName(event.target.value)}><option value="">班级选择</option>{classes.map(name => <option key={name}>{name}</option>)}</select>
-      <Icon label="课表上一周" icon={ChevronLeft} onClick={() => setWeek(shiftDate(monday, -7))} />
+      {mode !== 'history' && <><Icon label="课表上一周" icon={ChevronLeft} onClick={() => setWeek(shiftDate(monday, -7))} />
       <DateInput type="date" aria-label="课表周日期" value={week} onChange={event => { if (event.target.value) setWeek(event.target.value); }} />
       <Icon label="课表下一周" icon={ChevronRight} onClick={() => setWeek(shiftDate(monday, 7))} />
-      <button className="planner-today" onClick={() => setWeek(today)}>本周</button>
+      <button className="planner-today" onClick={() => setWeek(today)}>本周</button></>}
     </div>
-    {!needsIdentity && !needsClass && <div className="course-summary"><span>今日 <strong>{daily.length}</strong> 节</span>{settings.confirmed
+    {mode !== 'history' && <><div className="course-status-band"><div className="course-summary"><span>今日 <strong>{daily.length}</strong> 节</span>{settings.confirmed || !daily.length
       ? <><span>已上 {finished}</span><span>剩余 {daily.length - finished}</span></>
-      : <button onClick={() => setDialog({ type: 'settings' })}>作息待确认</button>}</div>}
-    {settings.confirmed && !needsIdentity && !needsClass && <div className="course-now"><span>当前：{current.length ? current.map(lessonLabel).join(' / ') : '无课'}</span>
-      <span>下一节：{next ? `${settings.bells[next.order - 1].start} ${lessonLabel(next)}` : '今日无后续课程'}</span></div>}
+      : <button onClick={() => setDialog({ type: 'settings' })}>作息待确认</button>}</div>
+    <div className="course-now"><span>当前：{!settings.confirmed && daily.length ? '作息待确认' : current.length ? current.map(lessonLabel).join(' / ') : '无课'}</span>
+      <span>下一节：<strong>{!settings.confirmed && daily.length ? '作息待确认' : next ? `${settings.bells[next.order - 1].start} ${lessonLabel(next)}` : '今日无后续课程'}</strong></span></div></div>
     {conflicts.length > 0 && <details className="course-conflicts"><summary><CircleAlert size={15} />{conflicts.length} 处时间冲突</summary>
       {conflicts.map(({ a, b, reasons }) => <button key={`${a.key}:${b.key}`} onClick={() => setDialog({ type: 'lesson', lesson: a })}>
         {a.date} 第{a.order}节 · {a.title} / {b.title} · {reasons.join('、')}冲突</button>)}</details>}
@@ -153,8 +161,8 @@ export function CourseBoard({ data, Modal, mutate, records, onNotify, onEdit, on
                 {lesson.room && <small>{lesson.room}</small>}{lesson.changed && <small>已调整</small>}{conflictKeys.has(lesson.key) && <CircleAlert size={12} aria-label="时间冲突" />}
               </button>)}
           </td>)}</tr>)}</tbody>
-      </table>
-    {dialog?.type === 'settings' && <Settings Modal={Modal} value={settings} onClose={() => setDialog(null)} onSave={async draft => {
+      </table></>}
+    {dialog?.type === 'settings' && <Settings Modal={Modal} value={settings} onNotify={onNotify} onClose={() => setDialog(null)} onSave={async draft => {
       if (dialog.slot && !draft.myTeacher.trim()) throw new Error('请填写我的授课姓名');
       const next = await mutate('/planner/course-settings', { method: 'PUT', body: draft });
       if (draft.reminders) syncReminders(records, true).catch(error => onNotify(error.message));
@@ -163,12 +171,12 @@ export function CourseBoard({ data, Modal, mutate, records, onNotify, onEdit, on
     {dialog?.type === 'lesson' && <Lesson Modal={Modal} lesson={dialog.lesson} events={events} onClose={() => setDialog(null)}
       onEdit={() => { const course = dialog.lesson.course; setDialog(null); onEdit(course); }}
       onSave={body => mutate(`/planner/${dialog.lesson.course.id}/lesson`, { method: 'POST', body })} />}
-    {dialog?.type === 'history' && <Modal title="调代课记录" className="course-history-modal" onClose={() => setDialog(null)}>
-      {!historyEvents.length && <p className="muted">暂无变更记录</p>}
+    {mode === 'history' && <section className="course-history-page" aria-label="代课记录">
+      {!historyEvents.length && <p className="muted">{needsClass ? '请选择班级' : '暂无代课记录'}</p>}
       {[...historyEvents].reverse().map(event => { const course = courses.find(item => item.id === event.course_id); return course && <button key={event.id} className="course-history-row" onClick={() => setDialog({ type: 'lesson', lesson: fromEvent(event) })}>
         <strong>{course.payload.title} · {course.payload.className || '未分班'}</strong><span>原定 {event.source_date} → {event.payload.cancelled ? '停课' : `${event.payload.date} 第${event.payload.order}节`}</span>
         <small>{event.payload.teacher} {event.payload.reason} · {new Date(event.created).toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai', hour12: false })}</small>
       </button>; })}
-    </Modal>}
+    </section>}
   </div>;
 }

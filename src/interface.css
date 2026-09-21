@@ -15,6 +15,7 @@ input[inputmode="decimal"]::-webkit-inner-spin-button,input[inputmode="decimal"]
 .module-actions{display:flex;align-items:center;gap:12px}
 .module-actions>.icon-button{background:#fff;color:var(--brand-strong)}
 .ledger-page>.page-heading{margin:-28px -32px 0;padding:24px 32px 12px;background:var(--brand-soft)}
+.health-page>.page-heading{background:var(--brand-soft)}
 .ledger-head{background:var(--brand-soft);margin:0 -32px;padding:0 32px 10px}
 .ledger #ledger-view-panel{min-height:calc(100dvh - 200px);overflow-anchor:none}
 .ledger .ledger-overview{height:154px;box-sizing:border-box;padding:18px;display:grid;grid-template-rows:32px 74px;row-gap:12px}
@@ -215,7 +216,7 @@ input[inputmode="decimal"]::-webkit-inner-spin-button,input[inputmode="decimal"]
   .ledger-page>.page-heading{flex-shrink:0;height:calc(64px + env(safe-area-inset-top));min-height:64px;margin:0 -18px;padding:calc(16px + env(safe-area-inset-top)) 18px 0}
   .ledger-page>.page-heading h1{font-size:22px}
   .records-page.health-page{padding-top:0}
-  .health-page>.page-heading{position:sticky;top:0;z-index:5;flex-shrink:0;height:calc(64px + env(safe-area-inset-top));min-height:64px;margin:0 -18px 20px;padding:calc(16px + env(safe-area-inset-top)) 18px 0;background:#fff}
+  .health-page>.page-heading{position:sticky;top:0;z-index:5;flex-shrink:0;height:calc(64px + env(safe-area-inset-top));min-height:64px;margin:0 -18px 20px;padding:calc(16px + env(safe-area-inset-top)) 18px 0;background:var(--brand-soft)}
   .health-page>.page-heading h1{font-size:22px}
   .ledger-page>.ledger{flex:1;min-height:0;display:flex;flex-direction:column}
   .ledger .ledger-section-tabs{flex-shrink:0;margin-bottom:0}
