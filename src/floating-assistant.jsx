@@ -7,6 +7,8 @@ import './floating-assistant.css';
 export const NativeAssistant = registerPlugin('FloatingAssistant');
 export const overlaySession = window.__ZAIZAI_OVERLAY__ || null;
 const ASSISTANT_ANIMATIONS = ['/assistant-gifs/assistant-01.gif', '/assistant-gifs/assistant-02.gif', '/assistant-gifs/assistant-03.gif'];
+const ASSISTANT_WIDTH = 48;
+const ASSISTANT_HEIGHT = 32;
 const randomAnimation = current => {
   if (!current) return ASSISTANT_ANIMATIONS[Math.floor(Math.random() * ASSISTANT_ANIMATIONS.length)];
   const currentIndex = ASSISTANT_ANIMATIONS.indexOf(current);
@@ -54,7 +56,7 @@ export function AssistantEdge({ onOpen, active, unread }) {
   const drag = useRef(null);
   const moved = useRef(false);
   function clamp(x, y) {
-    return { x: x < innerWidth / 2 ? -20 : innerWidth - 28, y: Math.max(16, Math.min(innerHeight - 148, y)) };
+    return { x: x < innerWidth / 2 ? 0 : Math.max(0, innerWidth - ASSISTANT_WIDTH), y: Math.max(16, Math.min(innerHeight - ASSISTANT_HEIGHT - 16, y)) };
   }
   useEffect(() => {
     const resize = () => setPosition(previous => previous ? clamp(previous.x, previous.y) : null);
