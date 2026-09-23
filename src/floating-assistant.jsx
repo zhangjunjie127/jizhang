@@ -76,7 +76,7 @@ export function AssistantEdge({ onOpen, active, unread }) {
     schedule();
     return () => window.clearTimeout(timer);
   }, []);
-  return <button className={`assistant-edge${position?.x < 0 ? ' dock-left' : ''}${active ? ' in-call' : ''}`}
+  return <button className={`assistant-edge${position?.x === 0 ? ' dock-left' : ''}${active ? ' in-call' : ''}`}
     style={position ? { left: position.x, top: position.y, right: 'auto', bottom: 'auto' } : undefined}
     aria-label={active ? '展开通话助手' : '展开助手'} title={active ? '通话中，点击展开' : '展开助手'}
     onPointerDown={event => {
