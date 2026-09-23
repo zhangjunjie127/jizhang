@@ -13,8 +13,9 @@ const STATUS = { open: '未结清', settled: '已结清', voided: '已作废' };
 const empty = { people: [], bills: [], payments: [] };
 const DebtAmount = ({ cents, full = false }) => <span className="debt-amount" title={`${exact(cents)} 元`}>{full ? exact(cents) : compact(cents)}</span>;
 
-export function DebtManager({ Modal, onClose, onChange, initialBillId, receivableOnly = false, inline = false, onBusyChange }) {
+export function DebtManager({ Modal, onClose, onChange, initialBillId, receivableOnly = false, inline = false, onBusyChange, createSignal = 0 }) {
   const inlineRef = useRef(null);
+  const lastCreateSignal = useRef(createSignal);
   const [data, setData] = useState(empty);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
@@ -23,6 +24,14 @@ export function DebtManager({ Modal, onClose, onChange, initialBillId, receivabl
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState(receivableOnly ? 'open' : 'all');
   const [busy, setBusy] = useState(false);
+  useEffect(() => {
+    if (lastCreateSignal.current === createSignal) return;
+    lastCreateSignal.current = createSignal;
+    if (!inline || busy || loading || loadError) return;
+    setScreen(previous => ['list', 'person', 'bill'].includes(previous.type)
+      ? { type: 'new', personId: previous.personId || data.bills.find(item => item.id === previous.billId)?.person_id, returnTo: previous }
+      : previous);
+  }, [createSignal, inline, busy, loading, loadError, data.bills]);
   useEffect(() => { onBusyChange?.(busy); }, [busy, onBusyChange]);
   useEffect(() => { if (inline && screen.type !== 'list') window.scrollTo({ top: 0 }); }, [inline, screen]);
   const person = data.people.find(item => item.id === screen.personId);
@@ -114,7 +123,7 @@ export function DebtManager({ Modal, onClose, onChange, initialBillId, receivabl
                 }) : <div className="debt-empty"><p>暂无这类借款账单</p></div>}
               </section>}
             </div>
-            <div className="debt-actions"><button className="primary" onClick={() => newBill(person?.id)}><Plus size={18} />新增借款</button></div>
+            {!inline && <div className="debt-actions"><button className="primary" onClick={() => newBill(person?.id)}><Plus size={18} />新增借款</button></div>}
           </>}
           {screen.type === 'bill' && bill && <>
             <div className="debt-scroll">

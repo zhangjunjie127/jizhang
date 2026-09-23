@@ -1,4 +1,4 @@
-.ledger-section-tabs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));border-bottom:1px solid var(--line);margin-bottom:18px}
+.ledger-section-tabs{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));border-bottom:1px solid var(--line);margin-bottom:18px}
 .ledger-section-tabs>button{height:48px;min-width:0;font-size:15px;border-bottom:3px solid transparent;color:#667085}
 .ledger-section-tabs>button[aria-selected=true]{color:var(--brand-strong);border-bottom-color:var(--brand);font-weight:600}
 .ledger-section-tabs>button:focus-visible{outline:2px solid var(--brand);outline-offset:-4px}

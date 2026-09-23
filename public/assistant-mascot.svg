@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 160" role="img" aria-label="趴在屏幕边缘的小动物助手">
+  <defs>
+    <linearGradient id="fur" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#d49a5f"/><stop offset="1" stop-color="#a86d3e"/>
+    </linearGradient>
+  </defs>
+  <path d="M22 147c4-42 9-90 35-113C70 23 88 17 108 22c28 7 40 35 35 70-5 34-24 52-58 57-23 3-45 1-63-2Z" fill="url(#fur)" stroke="#191714" stroke-width="5" stroke-linejoin="round"/>
+  <path d="M105 23c-2-14 5-22 15-20 12 2 14 15 5 28" fill="#a86d3e" stroke="#191714" stroke-width="5"/>
+  <ellipse cx="85" cy="76" rx="25" ry="28" fill="#946342" opacity=".72"/>
+  <ellipse cx="67" cy="48" rx="19" ry="22" fill="#fff" stroke="#191714" stroke-width="5"/>
+  <ellipse cx="119" cy="76" rx="20" ry="23" fill="#fff" stroke="#191714" stroke-width="5"/>
+  <circle cx="72" cy="51" r="6" fill="#111"/><circle cx="124" cy="79" r="6" fill="#111"/>
+  <path d="M84 67v13m0 0-18 14m18-14 15 5" fill="none" stroke="#191714" stroke-width="4" stroke-linecap="round"/>
+  <path d="M37 145c-3 9 1 14 9 12 4-1 6-5 7-8 2 7 8 9 12 4 2-3 2-7 1-11" fill="#b87945" stroke="#191714" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M107 148c-1 8 5 11 11 7 3-2 4-5 4-8 4 5 10 4 12-1 1-3 0-7-2-10" fill="#b87945" stroke="#191714" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

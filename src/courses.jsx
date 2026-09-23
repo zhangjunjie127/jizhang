@@ -1,11 +1,12 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { ChevronLeft, ChevronRight, Plus, Trash2, Pencil, CircleAlert } from 'lucide-react';
 import { WEEKDAYS, plannerToday, weekday, shiftDate } from '../shared/planner.mjs';
-import { courseLessons, courseConflicts, defaultCourseSettings, lessonTime } from '../shared/courses.mjs';
-import { DateInput } from './date-picker';
+import { courseLessons, courseSubstitutions, courseConflicts, courseTone, defaultCourseSettings, lessonTime } from '../shared/courses.mjs';
+import { DateInput, DatePickerDialog } from './date-picker';
 import { syncReminders } from './api';
 import { requestId } from './navigation';
 import './courses.css';
+import { EDUCATION } from '../shared/education.mjs';
 
 function Icon({ label, icon: Glyph, ...props }) {
   return <button type="button" className="planner-icon" aria-label={label} title={label} {...props}><Glyph size={19} /></button>;
@@ -89,14 +90,16 @@ export function CourseBoard({ data, Modal, mutate, records, onNotify, onEdit, on
   const courses = data.items.filter(item => item.kind === 'course');
   const [now, setNow] = useState(Date.now), [week, setWeek] = useState(plannerToday);
   const [mode, setMode] = useState('mine'), [className, setClassName] = useState('');
+  const [stage, setStage] = useState(''), [grade, setGrade] = useState('');
+  const matchesEducation = payload => (!stage || payload.stage === stage) && (!grade || payload.grade === grade);
   const [dialog, setDialog] = useState(null);
+  const [weekPickerOpen, setWeekPickerOpen] = useState(false);
   useEffect(() => { const timer = setInterval(() => setNow(Date.now()), 15000); return () => clearInterval(timer); }, []);
   const today = plannerToday(now), monday = shiftDate(week, -weekday(week)), sunday = shiftDate(monday, 6);
   const lessons = courseLessons(courses, events, monday, sunday);
   const mine = settings.myTeacher;
-  const needsIdentity = mode === 'mine' && !mine;
   const needsClass = !className;
-  const matchesView = lesson => Boolean(className) && (lesson.className || '未分班') === className
+  const matchesView = lesson => matchesEducation(lesson) && Boolean(className) && (lesson.className || '未分班') === className
     && (mode !== 'mine' || Boolean(mine) && lesson.teacher === mine);
   const visible = lessons.filter(matchesView);
   const daily = courseLessons(courses, events, today, today).filter(matchesView);
@@ -106,25 +109,18 @@ export function CourseBoard({ data, Modal, mutate, records, onNotify, onEdit, on
   const visibleKeys = new Set(visible.map(lesson => lesson.key));
   const conflicts = courseConflicts(lessons).filter(({ a, b }) => visibleKeys.has(a.key) || visibleKeys.has(b.key));
   const conflictKeys = new Set(conflicts.flatMap(item => [item.a.key, item.b.key]));
-  const classes = [...new Set(courses.map(item => item.payload.className || '未分班'))].sort();
-  const myHistoryKeys = new Set(events.filter(event => mine && event.payload.teacher === mine).map(event => `${event.course_id}:${event.source_date}`));
-  const historyEvents = events.filter(event => {
+  const classes = [...new Set(courses.filter(item => matchesEducation(item.payload)).map(item => item.payload.className || '未分班'))].sort();
+  const historyEvents = courseSubstitutions(courses, events).filter(event => {
     const course = courses.find(item => item.id === event.course_id);
-    return Boolean(className) && (course?.payload.className || '未分班') === className
-      && (mode !== 'mine' || Boolean(mine) && (course?.payload.teacher === mine || myHistoryKeys.has(`${event.course_id}:${event.source_date}`)));
+    return matchesEducation(course.payload) && Boolean(className) && (course.payload.className || '未分班') === className;
   });
   const lessonLabel = lesson => [lesson.title, lesson.className, lesson.room].filter(Boolean).join(' · ');
   function addSlot(index, order, teacher = mine) {
-    onAdd({ weekdays: [index], order, teacher: mode === 'mine' ? teacher : undefined,
+    onAdd({ weekdays: [index], order, stage, grade, teacher: mode === 'mine' ? teacher : undefined,
       className: className !== '未分班' ? className : '',
       requireClass: className !== '未分班' }, payload => {
       setClassName(payload.className.trim() || '未分班');
     });
-  }
-  function fromEvent(event) {
-    const course = courses.find(item => item.id === event.course_id);
-    const last = events.filter(item => item.course_id === event.course_id && item.source_date === event.source_date).at(-1);
-    return { ...course.payload, ...last.payload, sourceDate: event.source_date, course, event: last };
   }
   return <div className="course-board">
     <div className="course-controls">
@@ -132,12 +128,15 @@ export function CourseBoard({ data, Modal, mutate, records, onNotify, onEdit, on
         <button key={value} aria-pressed={mode === value} onClick={() => setMode(value)}>{label}</button>)}</div>
     </div>
     <div className="course-filters">
-      <select aria-label="班级选择" value={className} onChange={event => setClassName(event.target.value)}><option value="">班级选择</option>{classes.map(name => <option key={name}>{name}</option>)}</select>
+        <select aria-label="学段选择" title={stage || '学段选择'} value={stage} onChange={e => { setStage(e.target.value); setGrade(''); setClassName(''); }}><option value="">学段</option>{Object.keys(EDUCATION).map(value => <option key={value}>{value}</option>)}</select>
+        <select aria-label="年级选择" title={grade || '年级选择'} value={grade} disabled={!stage} onChange={e => { setGrade(e.target.value); setClassName(''); }}><option value="">年级</option>{(EDUCATION[stage] || []).map(value => <option key={value}>{value}</option>)}</select>
+      <select aria-label="班级选择" title={className || '班级选择'} value={className} onChange={event => setClassName(event.target.value)}><option value="">班级</option>{classes.map(name => <option key={name}>{name}</option>)}</select>
       {mode !== 'history' && <><Icon label="课表上一周" icon={ChevronLeft} onClick={() => setWeek(shiftDate(monday, -7))} />
-      <DateInput type="date" aria-label="课表周日期" value={week} onChange={event => { if (event.target.value) setWeek(event.target.value); }} />
+      <button type="button" className="course-week-date" aria-label="课表周日期" title={week} aria-haspopup="dialog" aria-expanded={weekPickerOpen} onClick={() => setWeekPickerOpen(true)}>{week.slice(5).replace('-', '/')}</button>
       <Icon label="课表下一周" icon={ChevronRight} onClick={() => setWeek(shiftDate(monday, 7))} />
       <button className="planner-today" onClick={() => setWeek(today)}>本周</button></>}
     </div>
+    {weekPickerOpen && <DatePickerDialog type="date" title="课表周日期" value={week} required onChange={setWeek} onClose={() => setWeekPickerOpen(false)} />}
     {mode !== 'history' && <><div className="course-status-band"><div className="course-summary"><span>今日 <strong>{daily.length}</strong> 节</span>{settings.confirmed || !daily.length
       ? <><span>已上 {finished}</span><span>剩余 {daily.length - finished}</span></>
       : <button onClick={() => setDialog({ type: 'settings' })}>作息待确认</button>}</div>
@@ -149,13 +148,13 @@ export function CourseBoard({ data, Modal, mutate, records, onNotify, onEdit, on
     <table className="planner-course-grid" aria-label="每周课程表">
         <colgroup><col className="planner-period-column" />{WEEKDAYS.map(day => <col key={day} />)}</colgroup>
         <thead><tr><th scope="col">节次</th>{WEEKDAYS.map((day, index) => <th scope="col" key={day} aria-current={shiftDate(monday, index) === today ? 'date' : undefined}>{day}<small>{Number(shiftDate(monday, index).slice(8))}</small></th>)}</tr></thead>
-        <tbody>{Array.from({ length: Math.max(7, settings.bells.length, ...visible.map(lesson => lesson.order)) }, (_, index) => index + 1).map(order =>
+        <tbody>{Array.from({ length: Math.max(1, settings.bells.length, ...visible.map(lesson => lesson.order)) }, (_, index) => index + 1).map(order =>
           <tr key={order}><th scope="row">{order}</th>{WEEKDAYS.map((day, index) => <td key={day}>
             {!visible.some(lesson => lesson.order === order && lesson.date === shiftDate(monday, index)) &&
               <button type="button" className="course-empty-slot" aria-label={`添加${day}第${order}节课程`} title={`添加${day}第${order}节课程`}
-                onClick={() => needsIdentity ? setDialog({ type: 'settings', slot: { index, order } }) : addSlot(index, order)}><Plus size={14} /></button>}
+                onClick={() => addSlot(index, order)}><Plus size={14} /></button>}
             {visible.filter(lesson => lesson.order === order && lesson.date === shiftDate(monday, index)).map(lesson =>
-              <button className={`planner-course planner-tone-${lesson.tone}${current.some(item => item.key === lesson.key) ? ' is-current' : ''}${next?.key === lesson.key ? ' is-next' : ''}`}
+              <button className={`planner-course planner-tone-${courseTone(lesson.title)}${current.some(item => item.key === lesson.key) ? ' is-current' : ''}${next?.key === lesson.key ? ' is-next' : ''}`}
                 key={lesson.key} aria-label={`${day}第${order}节 ${lesson.title}`} title={lessonLabel(lesson)} onClick={() => setDialog({ type: 'lesson', lesson })}>
                 <strong>{lesson.title}</strong>{mode === 'mine' ? lesson.className && <small>{lesson.className}</small> : lesson.teacher && <small>{lesson.teacher}</small>}
                 {lesson.room && <small>{lesson.room}</small>}{lesson.changed && <small>已调整</small>}{conflictKeys.has(lesson.key) && <CircleAlert size={12} aria-label="时间冲突" />}
@@ -163,20 +162,21 @@ export function CourseBoard({ data, Modal, mutate, records, onNotify, onEdit, on
           </td>)}</tr>)}</tbody>
       </table></>}
     {dialog?.type === 'settings' && <Settings Modal={Modal} value={settings} onNotify={onNotify} onClose={() => setDialog(null)} onSave={async draft => {
-      if (dialog.slot && !draft.myTeacher.trim()) throw new Error('请填写我的授课姓名');
-      const next = await mutate('/planner/course-settings', { method: 'PUT', body: draft });
+      await mutate('/planner/course-settings', { method: 'PUT', body: draft });
       if (draft.reminders) syncReminders(records, true).catch(error => onNotify(error.message));
-      if (dialog.slot) addSlot(dialog.slot.index, dialog.slot.order, next.courseSettings.myTeacher);
     }} />}
     {dialog?.type === 'lesson' && <Lesson Modal={Modal} lesson={dialog.lesson} events={events} onClose={() => setDialog(null)}
       onEdit={() => { const course = dialog.lesson.course; setDialog(null); onEdit(course); }}
       onSave={body => mutate(`/planner/${dialog.lesson.course.id}/lesson`, { method: 'POST', body })} />}
-    {mode === 'history' && <section className="course-history-page" aria-label="代课记录">
+    {mode === 'history' && <section className={`course-history-page${!historyEvents.length ? ' is-empty' : ''}`} aria-label="代课记录">
+      <p className="course-history-hint">自动提取班级课表中的代课安排，无需手动输入。</p>
       {!historyEvents.length && <p className="muted">{needsClass ? '请选择班级' : '暂无代课记录'}</p>}
-      {[...historyEvents].reverse().map(event => { const course = courses.find(item => item.id === event.course_id); return course && <button key={event.id} className="course-history-row" onClick={() => setDialog({ type: 'lesson', lesson: fromEvent(event) })}>
-        <strong>{course.payload.title} · {course.payload.className || '未分班'}</strong><span>原定 {event.source_date} → {event.payload.cancelled ? '停课' : `${event.payload.date} 第${event.payload.order}节`}</span>
-        <small>{event.payload.teacher} {event.payload.reason} · {new Date(event.created).toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai', hour12: false })}</small>
-      </button>; })}
+      {[...historyEvents].reverse().map(event => { const course = courses.find(item => item.id === event.course_id); return <article key={event.id} className="course-history-row">
+        <strong>{course.payload.title} · {course.payload.className || '未分班'}</strong><span>{event.payload.date} 第{event.payload.order}节</span>
+        <span>原授课：{course.payload.teacher} · 代课：{event.payload.teacher}</span>
+        {event.payload.reason && <small>原因：{event.payload.reason}</small>}
+        <small>登记于 {new Date(event.created).toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai', hour12: false })}</small>
+      </article>; })}
     </section>}
   </div>;
 }

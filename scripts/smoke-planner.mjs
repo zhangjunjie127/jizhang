@@ -70,10 +70,10 @@ try {
   const views = page.getByRole('tablist', { name: '日程视图' });
   assert.equal(await views.getByRole('tab').count(), 3);
   assert.equal(await views.getByRole('tab', { name: '清单', exact: true }).count(), 0);
-  assert.equal(await views.getByRole('tab', { name: '日历', exact: true }).getAttribute('aria-selected'), 'true');
+  assert.equal(await views.getByRole('tab', { name: '待办', exact: true }).getAttribute('aria-selected'), 'true');
   await page.locator('.planner-month-board').waitFor();
   async function showList() {
-    await views.getByRole('tab', { name: '日历', exact: true }).click();
+    await views.getByRole('tab', { name: '待办', exact: true }).click();
     await page.getByRole('button', { name: '清单', exact: true }).click();
   }
   async function createFromMenu(label) {
@@ -342,7 +342,7 @@ try {
   assert.equal(await page.locator('.task-classification-state').count(), 0);
   await page.getByRole('button', { name: '取消', exact: true }).click();
   invalidModel = false;
-  await views.getByRole('tab', { name: '日历', exact: true }).click();
+  await views.getByRole('tab', { name: '待办', exact: true }).click();
   await page.locator('.planner-month-grid').getByRole('button', { name: new RegExp(`^${today}，`) }).click();
   assert.equal(await page.locator('.planner-task').count(), 0);
   assert([28, 35, 42].includes(await page.locator('.planner-month-cell').count()));
@@ -509,7 +509,7 @@ try {
   await page.getByRole('button', { name: '删除', exact: true }).click();
   await page.getByRole('button', { name: '确认删除', exact: true }).click();
   await page.setViewportSize({ width: 390, height: 844 });
-  await views.getByRole('tab', { name: '课程表', exact: true }).click();
+  await views.getByRole('tab', { name: '课程', exact: true }).click();
   await page.getByRole('button', { name: '代课记录', exact: true }).waitFor();
   assert.equal(await page.locator('.course-controls .planner-icon').count(), 0);
   await page.getByRole('button', { name: '代课记录', exact: true }).click();
@@ -550,7 +550,7 @@ try {
     await page.screenshot({ path: `artifacts/course-empty-grid-${width}.png` });
   }
   await page.getByRole('button', { name: '添加周二第3节课程', exact: true }).click();
-  assert.equal(await page.getByLabel('历史课程', { exact: true }).isDisabled(), true);
+  assert.equal(await page.getByLabel('历史记录', { exact: true }).isDisabled(), true);
   assert.equal(await page.getByLabel('周二', { exact: true }).isChecked(), true);
   assert.equal(await page.locator('.planner-week-options input:checked').count(), 1);
   assert.equal(await page.getByLabel('课程顺序', { exact: true }).inputValue(), '3');
@@ -626,7 +626,7 @@ try {
   await page.getByRole('button', { name: '取消', exact: true }).click();
   await page.getByRole('button', { name: '添加周五第6节课程', exact: true }).click();
   const historySource = (await api('/planner')).items.find(item => item.payload.title === '英语');
-  await page.getByLabel('历史课程', { exact: true }).selectOption(historySource.id);
+  await page.getByLabel('历史记录', { exact: true }).selectOption(historySource.id);
   assert.equal(await page.getByLabel('课程名称', { exact: true }).inputValue(), '英语');
   assert.equal(await page.getByLabel('班级', { exact: true }).inputValue(), '七年级一班');
   assert.equal(await page.getByLabel('教室', { exact: true }).inputValue(), '教学楼 302');
@@ -689,7 +689,7 @@ try {
   await page.setViewportSize({ width: 390, height: 844 });
   await createFromMenu('新建课程');
   assert.equal(await page.getByLabel('老师', { exact: true }).inputValue(), '陈老师');
-  await page.getByLabel('历史课程', { exact: true }).selectOption(historySource.id);
+  await page.getByLabel('历史记录', { exact: true }).selectOption(historySource.id);
   assert.equal(await page.getByLabel('课程顺序', { exact: true }).inputValue(), '2');
   assert.equal(await page.getByLabel('周一', { exact: true }).isChecked(), true);
   await page.getByLabel('课程名称').fill('历史微调课程');
@@ -700,13 +700,13 @@ try {
   await page.getByRole('button', { name: '编辑每周课程', exact: true }).click();
   await page.getByRole('dialog', { name: '编辑课程', exact: true }).waitFor();
   await page.screenshot({ path: 'artifacts/course-history-edit.png' });
-  assert.equal(await page.getByLabel('历史课程', { exact: true }).count(), 0);
+  assert.equal(await page.getByLabel('历史记录', { exact: true }).count(), 0);
   assert.equal(await page.locator('textarea[name="note"]').inputValue(), '历史填入后微调');
   assert.deepEqual((await api('/planner')).items.find(item => item.id === historySource.id), historySource);
   await page.getByRole('button', { name: '删除课程', exact: true }).click();
   await page.getByRole('button', { name: '确认删除', exact: true }).click();
   await createFromMenu('新建课程');
-  assert.equal(await page.getByLabel('历史课程', { exact: true }).locator('option').filter({ hasText: '历史微调课程' }).count(), 0);
+  assert.equal(await page.getByLabel('历史记录', { exact: true }).locator('option').filter({ hasText: '历史微调课程' }).count(), 0);
   await page.getByRole('button', { name: '取消', exact: true }).click();
   await page.getByRole('button', { name: '周一第2节 英语', exact: true }).click();
   await page.getByLabel('教学进度与备课备注', { exact: true }).fill('讲到第二章，准备听力材料');
@@ -772,7 +772,7 @@ try {
       await page.screenshot({ path: `artifacts/module-heading-${module === '记账' ? 'ledger' : module === '健康' ? 'health' : 'planner'}-${width}.png` });
     }
     let headingGeometry;
-    for (const [view, key] of [['清单', 'list'], ['日历', 'calendar'], ['打卡', 'habits'], ['课程表', 'courses']]) {
+    for (const [view, key] of [['清单', 'list'], ['待办', 'calendar'], ['打卡', 'habits'], ['课程', 'courses']]) {
       if (key === 'list') await showList();
       else await views.getByRole('tab', { name: view, exact: true }).click();
       await page.getByRole('tabpanel').waitFor();
@@ -810,11 +810,11 @@ try {
     }
   }
   await page.setViewportSize({ width: 1280, height: 900 });
-  await views.getByRole('tab', { name: '日历', exact: true }).click();
+  await views.getByRole('tab', { name: '待办', exact: true }).click();
   assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
   await page.screenshot({ path: 'artifacts/planner-calendar-desktop.png' });
   await page.setViewportSize({ width: 430, height: 844 });
-  await views.getByRole('tab', { name: '课程表', exact: true }).click();
+  await views.getByRole('tab', { name: '课程', exact: true }).click();
   assert.equal(await page.locator('.planner-course-grid thead th').count(), 8);
   assert.equal(await page.locator('.planner-course-grid tbody tr').count(), 7);
   await page.getByLabel('班级选择', { exact: true }).selectOption('七年级一班');
@@ -834,7 +834,7 @@ try {
   await page.screenshot({ path: 'artifacts/planner-habit-form-320.png' });
   assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
   await page.getByRole('button', { name: '取消', exact: true }).click();
-  await views.getByRole('tab', { name: '日历', exact: true }).click();
+  await views.getByRole('tab', { name: '待办', exact: true }).click();
   assert(await page.locator('.planner-month-board').evaluate(el => el.clientHeight) >= 110);
   await page.screenshot({ path: 'artifacts/planner-calendar-short-320.png' });
   await page.getByRole('button', { name: `查看${today}详情`, exact: true }).click();
@@ -879,7 +879,7 @@ try {
   }
   await page.reload();
   await nav.getByRole('button', { name: '待办', exact: true }).click();
-  await views.getByRole('tab', { name: '日历', exact: true }).click();
+  await views.getByRole('tab', { name: '待办', exact: true }).click();
   await chooseMonth('2026-09');
   for (const [date, priority] of [['06', 'high'], ['07', 'important'], ['08', 'urgent'], ['09', 'low'], ['10', 'anniversary'], ['11', 'empty']]) {
     const corner = page.locator(`[data-date="2026-09-${date}"] .planner-cell-more`);
@@ -934,7 +934,7 @@ try {
     await preview.locator('.planner-day-preview-body').evaluate(el => { el.scrollTop = 0; });
     await page.screenshot({ path: `artifacts/calendar-day-preview-${width}.png` });
     await preview.getByRole('button', { name: '关闭', exact: true }).click();
-    assert.equal(await views.getByRole('tab', { name: '日历', exact: true }).getAttribute('aria-selected'), 'true');
+  assert.equal(await views.getByRole('tab', { name: '待办', exact: true }).getAttribute('aria-selected'), 'true');
   }
   // Four-, five- and six-week months must fit without hiding the last date or corner.
   for (const [width, height] of [[320, 640], [390, 844], [1280, 900]]) {

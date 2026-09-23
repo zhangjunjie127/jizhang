@@ -96,9 +96,12 @@ pnpm android:sync
 ```
 
 ```powershell
-$env:ANDROID_HOME = "$PWD\.tools\sdk"
-.\android\gradlew.bat -p android assembleDebug --no-daemon
+.\scripts\build-android.ps1 -ApiUrl 'http://YOUR_PC_LAN_IP:8787'
 ```
+
+Wi-Fi 测试包必须指定手机可达的电脑局域网地址。打包脚本会先检查后端，再重新构建并同步网页资源、生成 APK 和校验签名；默认拒绝 `127.0.0.1` 等回环地址。仅在明确使用 `adb reverse` 时加 `-Usb`。脚本使用本机缓存离线构建，首次使用需先准备 Android 构建依赖。
+
+覆盖安装保留手机上手动保存的服务地址；若旧地址错误，请在登录页“服务连接”中改为新的地址。电脑健康检查成功不代表手机与电脑之间的网络已互通。
 
 在当前 Codex 运行环境中，`pnpm` 可通过随 Node 附带的 `pnpm.cjs` 调用。
 `.tools/` 为本机安装的构建工具，不随源码分发。

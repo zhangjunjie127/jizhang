@@ -3,7 +3,12 @@ import { plannerToday, shiftDate, weekday } from './planner.mjs';
 export function courseTone(title) {
   const subjects = [['语文', 'rose'], ['数学', 'blue'], ['英语', 'violet'], ['科学', 'teal'],
     ['体育', 'green'], ['美术', 'amber'], ['音乐', 'violet'], ['劳动', 'green']];
-  return subjects.find(([subject]) => title.includes(subject))?.[1] || 'blue';
+  const normalized = String(title || '').trim().replace(/\s+/g, '');
+  const subjectTone = subjects.find(([subject]) => normalized.includes(subject))?.[1];
+  if (subjectTone) return subjectTone;
+  const tones = ['blue', 'green', 'violet', 'rose', 'amber', 'teal'];
+  const hash = [...normalized].reduce((value, char) => (value * 31 + char.codePointAt(0)) >>> 0, 7);
+  return tones[hash % tones.length];
 }
 
 export function defaultCourseSettings() {
@@ -31,6 +36,18 @@ export function courseLessons(items, events = [], from, to) {
     }
   }
   return result.sort((a, b) => a.date.localeCompare(b.date) || a.order - b.order || a.key.localeCompare(b.key));
+}
+
+export function courseSubstitutions(items, events = []) {
+  const courses = new Map(items.filter(item => item.kind === 'course' && !item.deleted_at).map(item => [item.id, item]));
+  const latest = new Map();
+  for (const event of events) latest.set(`${event.course_id}:${event.source_date}`, event);
+  return [...latest.values()].filter(event => {
+    const course = courses.get(event.course_id);
+    const teacher = event.payload.teacher?.trim();
+    const original = course?.payload.teacher?.trim();
+    return course && original && teacher && teacher !== original && !event.payload.cancelled;
+  });
 }
 
 export function courseConflicts(lessons) {

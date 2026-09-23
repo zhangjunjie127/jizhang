@@ -5,13 +5,21 @@
 .assistant-edge i{position:absolute;left:5px;top:7px;width:7px;height:7px;background:#f57a69;border:1px solid white;border-radius:50%}
 .assistant-edge.dock-left i{left:auto;right:5px}
 .workspace>.chat-page.assistant-panel{position:fixed;z-index:40;right:8px;bottom:calc(82px + env(safe-area-inset-bottom));width:min(390px,calc(100% - 16px));height:min(570px,calc(100dvh - 180px));min-height:210px;max-height:calc(100dvh - 100px);padding:0;display:flex;flex-direction:column;border:1px solid #dbe2eb;border-radius:8px;background:white;box-shadow:0 4px 24px #0002;overflow:hidden}
-.assistant-panel .chat-heading{padding:10px;gap:6px;min-height:52px;background:#edf5ff}
+.workspace>.chat-page.assistant-panel{border-color:#8babc8;box-shadow:0 12px 36px #183a5c40,0 2px 8px #183a5c24}
+.assistant-panel .chat-heading{padding:10px;gap:6px;min-height:52px;background:#245780;color:#fff;border-bottom:1px solid #194567}
+.assistant-panel .chat-heading small{color:#e0edf8}
+.assistant-panel .chat-heading .ai-label{color:#e0edf8;border-color:#ffffff66}
+.assistant-panel .chat-heading .icon-button{color:#fff;background:#ffffff18}
+.assistant-panel .chat-heading .icon-button:hover{background:#ffffff30}
 .assistant-panel .chat-heading>.avatar{width:30px;height:30px;flex-shrink:0}
 .assistant-panel .chat-heading>div{min-width:0}
 .assistant-panel .chat-heading strong{font-size:13px}
 .assistant-panel .chat-heading small{font-size:10px}
 .assistant-panel .chat-heading .icon-button{width:36px;height:36px;flex-shrink:0}
-.assistant-panel .messages{padding:14px 10px;overscroll-behavior:contain}
+.assistant-panel .messages{padding:14px 10px;overscroll-behavior:contain;background:#edf1f3;scrollbar-color:#a5b4be transparent}
+.assistant-panel .message .bubble{background:#fff;color:#293740;border:1px solid #d5dfe5}
+.assistant-panel .message.user .bubble{background:#d2e7fa;color:#163f61;border-color:#b4d2ed}
+.assistant-panel .message time{color:#627580}
 .assistant-panel .message{gap:6px}
 .assistant-panel .message>div{min-width:0;max-width:85%}
 .assistant-panel .bubble{overflow-wrap:anywhere}
@@ -20,8 +28,10 @@
 .assistant-panel .chat-welcome h2{font-size:18px}
 .assistant-panel .chat-welcome p{margin:8px 0}
 .assistant-panel .suggestions{margin-top:12px}
-.assistant-panel .composer{flex-shrink:0;padding:8px;gap:4px}
-.assistant-panel .composer textarea{min-width:0;font-size:14px}
+.assistant-panel .composer{flex-shrink:0;padding:8px;gap:4px;border-top:1px solid #b7c9d7;background:#fff}
+.assistant-panel .composer textarea{min-width:0;font-size:14px;background:#edf2f6;border:1px solid #c6d4df}
+.assistant-panel .composer textarea::placeholder{color:#657888}
+.assistant-panel .composer>.icon-button:not(.send-button){color:#46677f}
 .assistant-panel .composer .icon-button{width:36px;height:40px;flex-shrink:0}
 .assistant-panel .pending-chat{flex-shrink:0;margin:0;padding:8px;font-size:12px}
 .assistant-call-controls{display:flex;align-items:center;gap:8px;flex-shrink:0;padding:6px 10px;background:#f0faf5;border-top:1px solid #dfede4}

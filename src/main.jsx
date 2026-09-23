@@ -5,7 +5,7 @@ import {
   ArrowLeft, ArrowRight, Bell, BellOff, CalendarDays, Check, ChevronDown, ChevronRight,
   Circle, Clock3, Coffee, Heart, History, House, ListChecks, LoaderCircle, LogOut,
   MessageCircle, Mic, MicOff, MoreHorizontal, Pencil, Phone, PhoneOff, Plus, Scale, Send,
-  Settings2, ShieldCheck, Sparkles, Trash2, Wallet, X, RotateCcw, Camera, UserRound, Minus, PanelsTopLeft,
+  Settings2, ShieldCheck, Sparkles, Trash2, Wallet, X, RotateCcw, Camera, UserRound, Minus, PanelsTopLeft, GraduationCap,
 } from 'lucide-react';
 import { getBase, getToken, isNative, request, syncReminders } from './api';
 import { AssistantEdge, DesktopAssistantLifecycle, NativeAssistant, overlaySession } from './floating-assistant';
@@ -31,6 +31,7 @@ import { AccountSettings } from './account-settings';
 import { UserAvatar } from './user-avatar';
 import { SettingsMenu } from './settings-menu';
 import { PreferencesProvider } from './app-preferences';
+import { useDesktopWidgets, clearDesktopWidgets } from './desktop-widgets';
 import { AppLockProvider } from './app-lock';
 import './style.css';
 import './interface.css';
@@ -53,7 +54,7 @@ function IconButton({ icon: Icon, label, className = '', ...props }) {
 function Avatar({ persona = 'gentle', size = '', speaking = false }) {
   const item = PERSONAS[persona];
   return <span className={`avatar ${item.color} ${size} ${speaking ? 'speaking' : ''}`}>
-    {persona === 'gentle' ? <img src="/avatar.png" alt="" onError={e => { e.currentTarget.style.display = 'none'; }} /> : null}
+    {persona === 'gentle' ? <img src="/assistant-mascot.svg" alt="" onError={e => { e.currentTarget.style.display = 'none'; }} /> : null}
     <span>{item.initial}</span>
   </span>;
 }
@@ -226,6 +227,11 @@ function App() {
   const [microphoneActive, setMicrophoneActive] = useState(false);
   const [callSeconds, setCallSeconds] = useState(0);
   const [plannerCreateSignal, setPlannerCreateSignal] = useState(0);
+  const [plannerCourseCreate, setPlannerCourseCreate] = useState(null);
+  const [ledgerView, setLedgerView] = useState('details');
+  const [debtCreateSignal, setDebtCreateSignal] = useState(0);
+  const [widgetView, setWidgetView] = useState(null);
+  useDesktopWidgets(state, target => { setWidgetView({ target, at: Date.now() }); setPage('tasks'); });
   const [usage, setUsage] = useState(null);
   const [trash, setTrash] = useState([]);
   const [pendingExpanded, setPendingExpanded] = useState({});
@@ -477,6 +483,7 @@ function App() {
     await action('/profile', { method: 'PATCH', body });
   }
   async function logout() {
+    await clearDesktopWidgets().catch(() => {});
     if (isNative) await NativeAssistant.stop().catch(() => {});
     endCall();
     await request('/logout', { method: 'POST' }).catch(() => {});
@@ -554,13 +561,13 @@ function App() {
         {callStatus && <div className="assistant-call-controls" aria-label="通话控制"><span>{({ connecting: '正在连接', listening: muted ? '已静音' : '正在聆听', thinking: '正在思考', speaking: '正在说话' })[callStatus]}</span><time>{Math.floor(callSeconds / 60).toString().padStart(2, '0')}:{(callSeconds % 60).toString().padStart(2, '0')}</time><IconButton icon={muted ? MicOff : Mic} label={muted ? '取消静音' : '静音'} className={microphoneActive ? 'mic-active' : ''} aria-pressed={muted} data-microphone-state={muted ? 'muted' : microphoneActive ? 'active' : 'unavailable'} disabled={callStatus === 'connecting'} onClick={() => setMuted(call.current?.toggleMute())} /><IconButton icon={PhoneOff} label="结束通话" className="hangup" onClick={endCall} /></div>}
         <form className="composer" onSubmit={send}><IconButton icon={Plus} label="添加记录" onClick={() => setModal({ type: 'record-kind' })} type="button" />{!overlaySession && <IconButton icon={Camera} label="拍照识别小票" onClick={() => setModal({ type: 'receipt' })} type="button" />}<textarea aria-label="发送给助手的消息" value={text} onChange={e => setText(e.target.value)} placeholder={`和${persona.name}说点什么…`} maxLength={4000} rows={1} onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) { e.preventDefault(); send(); } }} /><IconButton icon={sending ? LoaderCircle : Send} label="发送消息" className={`send-button ${sending ? 'spin-icon' : ''}`} type="submit" disabled={!text.trim() || sending} /></form>
       </section>}
-      {!overlaySession && page === 'tasks' && <Planner key={state.user.id} userId={state.user.id} records={state.records} Modal={Modal} pending={<PendingSection scope="tasks" />} createSignal={plannerCreateSignal} onNotify={notify}
+      {!overlaySession && page === 'tasks' && <Planner key={state.user.id} userId={state.user.id} widgetView={widgetView} openCourse={plannerCourseCreate} records={state.records} Modal={Modal} pending={<PendingSection scope="tasks" />} createSignal={plannerCreateSignal} onNotify={notify}
         onCreateTask={defaults => setModal({ type: 'record', kind: 'task', defaults })} onEditTask={record => setModal({ type: 'record', record })} onComplete={complete}
         onDeleteTask={record => action(`/records/${record.id}`, { method: 'DELETE' }, '已移入回收站，可恢复')} />}
       {!overlaySession && PAGE_KIND[page] && page !== 'tasks' && <main className={`records-page module-page ${page}-page`}>
         <div className="page-heading"><h1>{PAGE_LABELS[page]}</h1><div className="module-actions"><button className="primary record-add" onClick={() => setModal({ type: 'record', kind: PAGE_KIND[page] })}><Plus size={19} />{{ ledger: '记一笔', tasks: '添加待办', health: '记录体重' }[page]}</button></div></div>
         {page !== 'ledger' && <PendingSection />}
-        {page === 'ledger' && <Ledger records={state.records} pending={<PendingSection />} onEdit={record => setModal(record.source === 'debt-repayment' ? { type: 'debts', billId: record.payload.debtBillId } : { type: 'record', record })} onDelete={safe(remove)} onTrash={() => openTrash('expense')} onError={notify} onNotify={notify} onDebtChange={result => {
+        {page === 'ledger' && <Ledger userId={state.user.id} view={ledgerView} setView={setLedgerView} debtCreateSignal={debtCreateSignal} records={state.records} pending={<PendingSection />} onEdit={record => setModal(record.source === 'debt-repayment' ? { type: 'debts', billId: record.payload.debtBillId } : { type: 'record', record })} onDelete={safe(remove)} onTrash={() => openTrash('expense')} onError={notify} onNotify={notify} onDebtChange={result => {
           acceptState(result);
           if (call.current?.ready) call.current.send({ type: 'app.refresh_context' });
         }} />}
@@ -596,7 +603,7 @@ function App() {
       </SettingsMenu>}
     </div>
     <nav className="mobile-nav" aria-label="主要功能">{NAVIGATION.map(([id, Icon, label], index) => <React.Fragment key={id}>
-      {index === 2 && <button className="nav-create" aria-label={{ ledger: '记一笔', tasks: '添加待办', health: '记录体重' }[page] || '新建记录'} title={{ ledger: '记一笔', tasks: '新建日程', health: '记录体重' }[page] || '新建记录'} onClick={() => page === 'tasks' ? setPlannerCreateSignal(value => value + 1) : setModal({ type: 'record-kind', scope: page })}><Plus size={30} /></button>}
+      {index === 2 && <button className="nav-create" aria-label={page === 'ledger' && ledgerView === 'debt' ? '新增借款' : { ledger: '记一笔', tasks: '添加待办', health: '记录体重' }[page] || '新建记录'} title={page === 'ledger' && ledgerView === 'debt' ? '新增借款' : { ledger: '记一笔', tasks: '新建日程', health: '记录体重' }[page] || '新建记录'} onClick={() => page === 'ledger' && ledgerView === 'debt' ? setDebtCreateSignal(value => value + 1) : page === 'tasks' ? setPlannerCreateSignal(value => value + 1) : setModal({ type: 'record-kind', scope: page })}><Plus size={30} /></button>}
       <button aria-label={label} aria-current={page === id ? 'page' : undefined} className={page === id ? 'active' : ''} onClick={() => setPage(id)}><Icon size={22} /><span>{label}</span>{badgeCount(id) > 0 && <i aria-label={`${badgeCount(id)} 条待查看`} />}</button>
     </React.Fragment>)}</nav>
     {modal?.type === 'account-service' && <AccountService type={modal.service} Modal={Modal} user={state.user} onClose={() => setModal(null)} onPasswordChanged={() => { if (call.current) endCall(); }} />}
@@ -625,6 +632,7 @@ function App() {
           .filter(([kind]) => !['ledger', 'health'].includes(modal.scope) || kind === PAGE_KIND[modal.scope])
           .map(([kind, icon, label]) => ({ label, icon, onSelect: () => setModal({ type: 'record', kind }) })),
         ...(modal.scope === 'health' ? [] : [{ label: '小票识别', icon: Camera, onSelect: () => setModal({ type: 'receipt' }) }]),
+        ...(modal.scope === 'mine' ? [{ label: '新建课程', icon: GraduationCap, onSelect: () => { setModal(null); setPlannerCourseCreate({ at: Date.now() }); setPage('tasks'); } }] : []),
       ]} />}
     {modal?.type === 'batch' && <Modal title="批量核对账目" wide onClose={() => setModal(null)}><BatchReview records={pending} onReload={refresh} onConfirm={items => action('/records/confirm-batch', { method: 'POST', body: { items } }, `已确认保存 ${items.length} 笔`)} onClose={() => setModal(null)} /></Modal>}
     {modal?.type === 'trash' && <Modal title="记录回收站" onClose={() => setModal(null)}>{trash.length ? trash.map(record => <div className="memory-row" key={record.id}><div><p>{record.payload.title}</p><small>{record.payload.date}{record.kind === 'expense' ? ` · ¥${money(record.payload.cents)}` : ''} · {record.status === 'pending' ? '草稿' : record.status === 'confirmed' ? '已确认' : '已忽略'}</small></div><IconButton icon={RotateCcw} label={`恢复${record.payload.title}`} onClick={safe(async () => {

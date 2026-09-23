@@ -25,6 +25,7 @@ export async function request(path, options = {}) {
   });
   const result = await response.json();
   if (!response.ok) throw Object.assign(new Error(result.error || '请求失败'), { status: response.status });
+  if (path.startsWith('/planner') && options.method && options.method !== 'GET') window.dispatchEvent(new Event('widget-data-changed'));
   return result;
 }
 const DocumentExport = registerPlugin('DocumentExport');

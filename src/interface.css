@@ -8,12 +8,17 @@ input[inputmode="decimal"]::-webkit-inner-spin-button,input[inputmode="decimal"]
 .topbar{height:56px;padding:0 32px}
 .sidebar nav button{color:#6b7177}
 .sidebar nav button.active{background:var(--brand-soft);color:var(--brand-strong)}
+.sidebar nav button>svg{fill:none;stroke:currentColor}
+.sidebar nav button.active>svg{fill:currentColor;stroke:currentColor}
 .sidebar nav i{background:#fff;color:#545961}
 .records-page,.mine-page{max-width:1040px;padding:28px 32px 40px}
 .page-heading{margin-bottom:22px}
 .page-heading h1{font-size:25px;line-height:1.4}
 .module-actions{display:flex;align-items:center;gap:12px}
 .module-actions>.icon-button{background:#fff;color:var(--brand-strong)}
+.ledger-tools .icon-button{width:36px;height:36px;color:var(--brand-strong)}
+.ledger-tools .icon-button>svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2}
+.ledger-tools .icon-button[aria-pressed=true]>svg,.ledger-tools .icon-button:active>svg{fill:currentColor;stroke:currentColor}
 .ledger-page>.page-heading{margin:-28px -32px 0;padding:24px 32px 12px;background:var(--brand-soft)}
 .health-page>.page-heading{background:var(--brand-soft)}
 .ledger-head{background:var(--brand-soft);margin:0 -32px;padding:0 32px 10px}
@@ -50,20 +55,20 @@ input[inputmode="decimal"]::-webkit-inner-spin-button,input[inputmode="decimal"]
 .view-tabs>button{color:#767d83;font-size:15px;padding:15px 0 12px}
 .view-tabs>button.active{border-color:var(--brand);color:var(--brand-strong);font-weight:650}
 .ledger-period-label{font-size:14px;padding:6px 0}
-.ledger-query{padding:8px 0;border-bottom:1px solid var(--line)}
+.ledger-query{padding:6px 0;border-bottom:1px solid var(--line)}
 .ledger-extra-filters{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
-.ledger-extra-filters>label{display:block;font-size:11px;color:#767d83;line-height:20px}
+.ledger-extra-filters>label{display:block;gap:5px;font-size:11px;color:#767d83;line-height:18px}
 .ledger-query input,.ledger-query select{display:block;width:100%;min-width:0;height:42px;padding:8px 10px;border:1px solid #e5e8ea;border-radius:6px;background:#f7f8f9;font:13px system-ui,sans-serif;color:#343b40;box-sizing:border-box}
 .ledger-query input:focus,.ledger-query select:focus{outline:2px solid var(--brand);outline-offset:1px}
-.ledger-query-toolbar{display:grid;grid-template-columns:minmax(0,1fr) 42px 42px;align-items:center;gap:8px}
+.ledger-query-toolbar{display:grid;grid-template-columns:minmax(0,1fr) 42px;align-items:center;gap:8px}
 .ledger-query-period{min-width:0;font-size:13px;font-weight:500;color:#536779;overflow-wrap:anywhere}
 .assistant-entry{position:relative}
 .assistant-entry>i{position:absolute;right:3px;top:3px;width:7px;height:7px;border-radius:50%;background:#e56c61;border:1px solid white}
 .settings-heading>.assistant-entry{margin-left:auto}
-.query-filter-toggle{position:relative;display:grid;place-items:center;width:42px;height:42px;border:1px solid #e5e8ea;border-radius:6px;color:#59666f;background:#f7f8f9}
+.query-filter-toggle{display:none}
 .query-filter-toggle[aria-expanded=true],.query-filter-toggle.is-active{background:#f7f8f9;border-color:#8cc5ff;color:var(--brand-strong)}
 .query-filter-toggle>span{position:absolute;right:-4px;top:-5px;border-radius:50%;background:#59666f;color:white;min-width:16px;height:16px;font-size:10px;display:grid;place-items:center}
-.ledger-extra-filters{margin-top:12px}
+.ledger-extra-filters{margin-top:8px}
 .query-selected{display:flex;align-items:center;flex-wrap:wrap;gap:8px;padding-top:10px}
 .query-condition{display:flex;align-items:center;gap:6px;padding:5px 8px;font-size:12px;background:#f0f3f4;color:#55636e;border-radius:4px;max-width:100%;overflow-wrap:anywhere}
 .query-condition>svg{flex-shrink:0}
@@ -173,13 +178,13 @@ input[inputmode="decimal"]::-webkit-inner-spin-button,input[inputmode="decimal"]
   .ledger-entry .ledger-amount{font-size:14px;max-width:125px}
   .ledger-entry .record-icon{width:35px;height:35px}
   .ledger .ledger-delete{width:30px}
-  .ledger .ledger-day-heading{margin:0;padding:6px 10px}
+  .ledger .ledger-day-heading{margin:0;padding:4px 10px}
   .record-add{display:none}
   .mobile-nav{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));align-items:center;height:calc(70px + env(safe-area-inset-bottom));padding:7px 6px calc(7px + env(safe-area-inset-bottom));background:#fff;backdrop-filter:none}
   .mobile-nav>button{font-size:11px;gap:5px;color:#92979c}
-  .mobile-nav>button>svg{width:36px;height:28px;padding:3px 7px;border-radius:7px}
+  .mobile-nav>button>svg{width:36px;height:28px;padding:3px 7px;border-radius:7px;fill:none;stroke:currentColor}
   .mobile-nav>button.active{color:var(--brand-strong);font-weight:600}
-  .mobile-nav>button.active>svg{background:var(--brand-soft)}
+  .mobile-nav>button.active>svg{background:var(--brand-soft);fill:currentColor;stroke:currentColor}
   .mobile-nav>.nav-create{justify-self:center;width:54px;height:54px;min-width:54px;border-radius:50%;background:var(--brand-strong);color:#fff;transform:translateY(-12px);box-shadow:0 3px 12px #0089ff24;border:3px solid #e8f3ff}
   .mobile-nav>.nav-create>svg{width:30px;height:30px;padding:0;border-radius:0}
   .mobile-nav>.nav-create:hover{background:#005bbc}
@@ -225,9 +230,9 @@ input[inputmode="decimal"]::-webkit-inner-spin-button,input[inputmode="decimal"]
   .ledger .ledger-overview{flex-shrink:0;height:124px;padding:12px 18px;grid-template-rows:28px 66px;row-gap:6px}
   .ledger .ledger-overview .ledger-toolbar{height:28px;min-height:28px}
   .ledger .ledger-overview .ledger-summary{height:66px;grid-template-rows:44px 18px;row-gap:4px}
-  .ledger .ledger-query{flex-shrink:0;padding:6px 0}
-  .ledger .ledger-extra-filters{margin-top:6px;gap:10px}
-  .ledger .ledger-extra-filters>label{line-height:18px}
+  .ledger .ledger-query{flex-shrink:0;padding:4px 0}
+  .ledger .ledger-extra-filters{margin-top:4px;gap:8px}
+  .ledger .ledger-extra-filters>label{gap:4px;line-height:16px}
   .ledger .ledger-extra-filters select{height:38px}
   .ledger .query-selected{padding-top:6px}
   .ledger .ledger-list-scroll,.ledger .bill-list-scroll{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin;padding-bottom:12px}

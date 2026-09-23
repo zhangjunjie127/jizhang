@@ -3,7 +3,29 @@ import assert from 'node:assert/strict';
 import { DatabaseSync } from 'node:sqlite';
 import { randomUUID } from 'node:crypto';
 import { createPlannerStore } from '../server/planner.mjs';
-import { courseLessons, courseConflicts, courseReminders, defaultCourseSettings, lessonTime } from '../shared/courses.mjs';
+import { courseLessons, courseSubstitutions, courseConflicts, courseReminders, courseTone, defaultCourseSettings, lessonTime } from '../shared/courses.mjs';
+
+test('same course title keeps one stable color across continuous periods and records', () => {
+  assert.equal(courseTone('语文'), courseTone('语文'));
+  assert.equal(courseTone('  校本课程  '), courseTone('校本课程'));
+  assert.notEqual(courseTone('校本课程A'), courseTone('校本课程B'));
+});
+
+test('substitution records derive only from the latest active teacher replacement', () => {
+  const items = [{ id: 'c', kind: 'course', payload: { teacher: '李老师' } }];
+  const event = (id, teacher, extra = {}) => ({ id, course_id: 'c', source_date: '2026-09-21', payload: { teacher, ...extra } });
+  const replacement = event('1', '王老师');
+  assert.deepEqual(courseSubstitutions(items, [replacement]), [replacement]);
+  const updated = event('2', '张老师', { note: '备注' });
+  assert.deepEqual(courseSubstitutions(items, [replacement, updated]), [updated]);
+  for (const last of [event('3', '李老师'), event('3', ''), event('3', '王老师', { cancelled: true })]) {
+    assert.deepEqual(courseSubstitutions(items, [replacement, last]), []);
+  }
+  assert.deepEqual(courseSubstitutions(items, [event('1', '李老师', { order: 3, note: '仅调课' })]), []);
+  assert.deepEqual(courseSubstitutions([], [replacement]), []);
+  assert.deepEqual(courseSubstitutions([{ ...items[0], deleted_at: '2026-09-23' }], [replacement]), []);
+  assert.deepEqual(courseSubstitutions([{ ...items[0], payload: { teacher: '' } }], [replacement]), []);
+});
 
 function fixture() {
   const db = new DatabaseSync(':memory:');

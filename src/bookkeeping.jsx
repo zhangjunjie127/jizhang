@@ -6,6 +6,7 @@ import { exportLedger } from './api';
 import { CATEGORIES, CategoryIcon, categoryTone } from './categories';
 import { BillReport } from './bill-report';
 import { DebtManager } from './debts';
+import { CalculatorTools } from './calculator-tools';
 import { LedgerDatePicker } from './ledger-date-picker';
 import { LedgerRows, money } from './ledger-rows';
 import { usePreferences } from './app-preferences';
@@ -13,10 +14,9 @@ export { CATEGORIES, CategoryIcon } from './categories';
 
 const currentMonth = () => new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Shanghai' }).slice(0, 7);
 
-export function Ledger({ records, pending, onEdit, onDelete, onTrash, onError, onNotify, onDebtChange }) {
+export function Ledger({ records, userId, pending, onEdit, onDelete, onTrash, onError, onNotify, onDebtChange, view, setView, debtCreateSignal }) {
   const { preferences } = usePreferences();
   const [filters, setFilters] = useState({ month: currentMonth(), date: preferences.calendarScope === 'today' ? new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Shanghai' }) : '', category: '', direction: '' });
-  const [view, setView] = useState('details');
   const [statistics, setStatistics] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [filtersOpen, setFiltersOpen] = useState(false);
@@ -54,13 +54,13 @@ export function Ledger({ records, pending, onEdit, onDelete, onTrash, onError, o
   }
   return <section className="ledger" aria-label="账本">
     <div className="ledger-section-tabs" role="tablist" aria-label="账单视图">
-      {[['details', '明细'], ['month', '月账单'], ['year', '年账单'], ['debt', '债务']].map(([value, label]) => <button
+      {[['details', '明细'], ['month', '月账单'], ['year', '年账单'], ['debt', '债务'], ['tools', '工具箱']].map(([value, label]) => <button
         key={value} id={`ledger-tab-${value}`} role="tab" aria-selected={view === value} aria-controls="ledger-view-panel"
         disabled={debtBusy && value !== view}
         onClick={() => { setView(value); if (value === 'details') setStatistics(false); }}>{label}</button>)}
     </div>
     <div id="ledger-view-panel" role="tabpanel" aria-labelledby={`ledger-tab-${view}`}>
-    {view === 'debt' ? <DebtManager inline onChange={onDebtChange} onBusyChange={setDebtBusy} /> : view !== 'details' ? <BillReport mode={view} year={reportYear} onYearChange={setReportYear} records={records}
+    {view === 'tools' ? <CalculatorTools userId={userId} records={records} /> : view === 'debt' ? <DebtManager inline createSignal={debtCreateSignal} onChange={onDebtChange} onBusyChange={setDebtBusy} /> : view !== 'details' ? <BillReport mode={view} year={reportYear} onYearChange={setReportYear} records={records}
       onOpenYear={year => { setReportYear(year); setView('month'); window.scrollTo({ top: 0 }); }}
       onOpenMonth={month => { setFilters({ month, date: '', category: '', direction: '' }); setStatistics(false); setView('details'); window.scrollTo({ top: 0 }); }} /> : <>
     <div className="ledger-head ledger-overview"><div className="ledger-toolbar">
@@ -83,11 +83,11 @@ export function Ledger({ records, pending, onEdit, onDelete, onTrash, onError, o
           onChange={(month, date) => setFilters(previous => ({ ...previous, month, date }))} />
         <button className={`query-filter-toggle ${extraFilterCount ? 'is-active' : ''}`} aria-label="收支与分类筛选" title="收支与分类筛选" aria-expanded={filtersOpen} aria-controls="ledger-extra-filters" onClick={() => setFiltersOpen(value => !value)}><svg viewBox="0 0 1024 1024" width={19} height={19} fill="currentColor" aria-hidden="true" focusable="false"><path d="M256 640h-64V448h288V320h64v128h288v192h-64V512H544v128h-64V512H256v128z m256-384c52.8 0 96-43.2 96-96s-43.2-96-96-96-96 43.2-96 96 43.2 96 96 96z m0 448c-52.8 0-96 43.2-96 96s43.2 96 96 96 96-43.2 96-96-43.2-96-96-96z m-288 0c-52.8 0-96 43.2-96 96s43.2 96 96 96 96-43.2 96-96-43.2-96-96-96z m576 0c-52.8 0-96 43.2-96 96s43.2 96 96 96 96-43.2 96-96-43.2-96-96-96z" /></svg>{extraFilterCount > 0 && <span>{extraFilterCount}</span>}</button>
       </div>
-      {filtersOpen && <div className="ledger-extra-filters" id="ledger-extra-filters">
+      <div className="ledger-extra-filters" id="ledger-extra-filters">
         <label>收支<select aria-label="筛选收支" value={filters.direction} onChange={e => update('direction', e.target.value)}><option value="">全部收支</option><option value="expense">支出</option><option value="income">收入</option></select></label>
         <label>分类<select aria-label="筛选分类" value={filters.category} onChange={e => update('category', e.target.value)}><option value="">全部分类</option>{categories.map(name => <option key={name}>{name}</option>)}</select></label>
-      </div>}
-      {(extraFilterCount > 0 || activeFilters) && <div className="query-selected">
+      </div>
+      {activeFilters && <div className="query-selected">
         {filters.direction && <button className="query-condition" aria-label="清除收支筛选" onClick={() => update('direction', '')}>{filters.direction === 'income' ? '收入' : '支出'}<X size={12} /></button>}
         {filters.category && <button className="query-condition" aria-label="清除分类筛选" onClick={() => update('category', '')}>{filters.category}<X size={12} /></button>}
         <button className="text-button query-reset" onClick={() => setFilters(p => ({ ...p, date: '', category: '', direction: '' }))}>清除筛选</button>

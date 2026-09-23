@@ -383,7 +383,9 @@ const server = http.createServer(async (req, res) => {
         if (!user || !verifyPassword(body.password, user.password)) fail('账号或密码不正确', 401);
       }
       const token = randomBytes(32).toString('hex');
-      db.prepare('INSERT INTO sessions VALUES (?,?,?)').run(tokenHash(token), user.id, new Date(Date.now() + 7 * 86400000).toISOString());
+      // Keep the local test session across app/server restarts. It is still removed by
+      // explicit logout, password changes, or account deletion.
+      db.prepare('INSERT INTO sessions VALUES (?,?,?)').run(tokenHash(token), user.id, new Date(Date.now() + 365 * 86400000).toISOString());
       return json(res, 200, { token, ...snapshot(user) });
     }
     const token = req.headers.authorization?.replace(/^Bearer /, '');
@@ -407,6 +409,10 @@ const server = http.createServer(async (req, res) => {
     if (courseLessonMatch && req.method === 'POST') {
       limit(`course-lesson:${user.id}`, 100, 60000);
       return json(res, 200, planner.saveLesson(user.id, courseLessonMatch[1], await readBody(req, 16384)));
+    }
+    if (path === '/api/planner/course-batch' && req.method === 'POST') {
+      limit(`planner:${user.id}`, 100, 60000);
+      return json(res, 201, planner.saveCourseBatch(user.id, await readBody(req, 65536)));
     }
     if (path === '/api/planner' && req.method === 'POST') {
       limit(`planner:${user.id}`, 100, 60000);

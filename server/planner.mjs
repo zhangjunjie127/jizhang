@@ -3,6 +3,7 @@ import { PLANNER_TONES, HABIT_ICONS, HABIT_REPEATS, plannerToday, habitScheduled
 import { validCalendarDate } from '../shared/calendar.mjs';
 import { createCourseStore, coursePhotos } from './courses.mjs';
 import { createTaskPhotoStore } from './task-photos.mjs';
+import { EDUCATION } from '../shared/education.mjs';
 
 export function validatePlanner(kind, input) {
   if (!['habit', 'course', 'anniversary'].includes(kind) || !input || typeof input !== 'object') fail('日程类型无效');
@@ -46,6 +47,11 @@ export function validatePlanner(kind, input) {
   } else {
     if (!Number.isInteger(input.order) || input.order < 1 || input.order > 20) fail('课程顺序需为1至20');
     payload.order = input.order;
+    const stage = input.stage || '', grade = input.grade || '';
+    if (stage && !Object.hasOwn(EDUCATION, stage)) fail('请选择有效的学段');
+    if (grade && !EDUCATION[stage]?.includes(grade)) fail('请选择该学段的年级');
+    if (stage) payload.stage = stage;
+    if (grade) payload.grade = grade;
     payload.teacher = input.teacher ? cleanText(input.teacher, 40, '老师') : '';
     payload.room = input.room ? cleanText(input.room, 60, '教室') : '';
     payload.className = input.className ? cleanText(input.className, 40, '班级') : '';
@@ -133,6 +139,16 @@ export function createPlannerStore(db) {
     return state(userId);
   }
   return { state, save, remove, check,
+    saveCourseBatch(userId, body) {
+      if (!Array.isArray(body?.entries) || !body.entries.length || body.entries.length > 20) fail('请选择1至20个课时');
+      if (body.entries.some(entry => entry.kind !== 'course' || entry.payload?.weekdays?.length !== 1)) fail('每次只能安排一个星期');
+      db.exec('SAVEPOINT course_batch');
+      try {
+        for (const entry of body.entries) save(userId, entry, entry.id);
+        db.exec('RELEASE course_batch');
+        return state(userId);
+      } catch (error) { db.exec('ROLLBACK TO course_batch'); db.exec('RELEASE course_batch'); throw error; }
+    },
     saveCourseSettings(userId, body) { courses.saveSettings(userId, body); return state(userId); },
     saveLesson(userId, id, body) { courses.saveLesson(userId, id, body); return state(userId); } };
 }
