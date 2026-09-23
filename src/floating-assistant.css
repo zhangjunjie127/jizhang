@@ -2,7 +2,7 @@
 .assistant-edge>img{display:block;width:100%;height:auto;pointer-events:none;user-select:none;filter:drop-shadow(0 2px 5px #0003);transform:translateX(9px) rotate(90deg)}
 .assistant-edge-status{position:absolute;right:4px;top:4px;padding:2px;border-radius:50%;background:#11875b;color:white;box-sizing:content-box}
 .assistant-edge.dock-left{height:48px;aspect-ratio:1;border-radius:0 8px 8px 0;padding:0;justify-content:flex-start;align-items:flex-start}
-.assistant-edge.dock-left>img{width:48px;height:32px;max-width:none;transform-origin:0 0;transform:translateX(-2px) rotate(90deg)}
+.assistant-edge.dock-left>img{width:48px;height:32px;max-width:none;transform-origin:0 0;transform:translateX(32px) rotate(90deg)}
 .assistant-edge.dock-left .assistant-edge-status{right:auto;left:4px}
 .assistant-edge i{position:absolute;left:5px;top:7px;width:7px;height:7px;background:#f57a69;border:1px solid white;border-radius:50%}
 .assistant-edge.dock-left i{left:auto;right:5px}
