@@ -19,9 +19,15 @@ export function defaultCourseSettings() {
 
 export function courseLessons(items, events = [], from, to) {
   const result = [];
-  for (const course of items.filter(item => item.kind === 'course' && !item.deleted_at)) {
-    const overrides = new Map();
-    for (const event of events.filter(item => item.course_id === course.id)) overrides.set(event.source_date, event);
+  const eventsByCourse = new Map();
+  for (const event of events) {
+    let overrides = eventsByCourse.get(event.course_id);
+    if (!overrides) eventsByCourse.set(event.course_id, overrides = new Map());
+    overrides.set(event.source_date, event);
+  }
+  for (const course of items) {
+    if (course.kind !== 'course' || course.deleted_at) continue;
+    const overrides = eventsByCourse.get(course.id) || new Map();
     const dates = new Set(overrides.keys());
     for (let date = from; date <= to; date = shiftDate(date, 1)) {
       if (course.payload.weekdays.includes(weekday(date))) dates.add(date);
@@ -71,7 +77,8 @@ export function lessonTime(lesson, settings) {
 export function courseReminders(state, now = Date.now(), days = 30) {
   const settings = state.courseSettings;
   if (!settings?.confirmed || !settings.reminders || !settings.myTeacher) return [];
-  return courseLessons(state.items, state.courseEvents, plannerToday(now), shiftDate(plannerToday(now), days))
+  const today = plannerToday(now);
+  return courseLessons(state.items, state.courseEvents, today, shiftDate(today, days))
     .filter(lesson => lesson.teacher === settings.myTeacher)
     .flatMap(lesson => {
       const time = lessonTime(lesson, settings);

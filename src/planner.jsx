@@ -161,9 +161,7 @@ export function Planner({ records, Modal, onCreateTask, onEditTask, onComplete, 
   }
   const save = async (body, id) => {
     if (body.entries) {
-      const next = await mutate('/planner/course-batch', { method: 'POST', body });
-      syncReminders(records).catch(error => onNotify(error.message));
-      return next;
+      return mutate('/planner/course-batch', { method: 'POST', body });
     }
     const next = await mutate(`/planner${id ? `/${id}` : ''}`, { method: id ? 'PATCH' : 'POST', body });
     if (body.kind === 'habit' && body.payload.reminders?.length) {
@@ -180,11 +178,19 @@ export function Planner({ records, Modal, onCreateTask, onEditTask, onComplete, 
   const dayTasks = new Map();
   for (const record of taskPool) {
     const date = taskDate(record);
-    if (date) dayTasks.set(date, [...(dayTasks.get(date) || []), record]);
+    if (date) {
+      const items = dayTasks.get(date);
+      if (items) items.push(record);
+      else dayTasks.set(date, [record]);
+    }
   }
   const habits = data.items.filter(item => item.kind === 'habit');
-  const scheduledHabits = habits.filter(item => habitDue(item, checkedDates(data.checks, item.id), selected) || checkedDates(data.checks, item.id).has(selected));
-  const doneHabits = scheduledHabits.filter(item => checkedDates(data.checks, item.id).has(selected)).length;
+  const checkedByHabit = new Map(habits.map(item => [item.id, checkedDates(data.checks, item.id)]));
+  const scheduledHabits = habits.filter(item => {
+    const dates = checkedByHabit.get(item.id);
+    return habitDue(item, dates, selected) || dates.has(selected);
+  });
+  const doneHabits = scheduledHabits.filter(item => checkedByHabit.get(item.id).has(selected)).length;
   function changeMonth(step) {
     const [year, value] = month.split('-').map(Number);
     const next = new Date(Date.UTC(year, value - 1 + step, 1)).toISOString().slice(0, 7);
@@ -241,9 +247,9 @@ export function Planner({ records, Modal, onCreateTask, onEditTask, onComplete, 
           {loading && <p className="planner-loading" role="status">加载中…</p>}
           {loadError && <div className="error-box" role="alert">{loadError}<button onClick={refresh}><RefreshCw size={15} />重试</button></div>}
           {!loading && !loadError && view === 'habits' && (scheduledHabits.length ? [false, true].map(done => {
-            const items = scheduledHabits.filter(item => checkedDates(data.checks, item.id).has(selected) === done);
+            const items = scheduledHabits.filter(item => checkedByHabit.get(item.id).has(selected) === done);
             return items.length > 0 && <section className="habit-list-group" key={String(done)}><h2>{done ? '已完成' : '未完成'}<span>{items.length}</span></h2>{items.map(item => {
-              const dates = checkedDates(data.checks, item.id);
+              const dates = checkedByHabit.get(item.id);
               const focus = item.payload.focus && selected === today && !done;
               return <div className={`planner-habit planner-tone-${item.payload.tone}`} key={item.id}><span className="planner-habit-icon"><HabitIcon icon={item.payload.icon} /></span><button className="planner-habit-body" onClick={() => setDialog({ type: 'history', entry: item })}><strong>{item.payload.title}</strong><small>{habitStatusText(item, dates, selected)}{item.payload.reminders?.length ? ` · ${item.payload.reminders.join(' / ')}` : ''}</small></button><button className={`planner-habit-check ${done ? 'checked' : ''}`} aria-label={`${done ? '取消打卡' : focus ? '开始专注' : '打卡'}${item.payload.title}`} aria-pressed={done} disabled={busy} onClick={safe(async () => {
                 if (focus) { setFocusSession({ id: item.id, date: selected, remaining: item.payload.focusMinutes * 60000, deadline: Date.now() + item.payload.focusMinutes * 60000 }); return; }

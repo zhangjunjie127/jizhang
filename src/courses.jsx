@@ -102,16 +102,25 @@ export function CourseBoard({ data, Modal, mutate, records, onNotify, onEdit, on
   const matchesView = lesson => matchesEducation(lesson) && Boolean(className) && (lesson.className || '未分班') === className
     && (mode !== 'mine' || Boolean(mine) && lesson.teacher === mine);
   const visible = lessons.filter(matchesView);
+  const coursesById = new Map(courses.map(course => [course.id, course]));
+  const lessonsBySlot = new Map();
+  for (const lesson of visible) {
+    const key = `${lesson.date}:${lesson.order}`;
+    const slot = lessonsBySlot.get(key);
+    if (slot) slot.push(lesson);
+    else lessonsBySlot.set(key, [lesson]);
+  }
   const daily = courseLessons(courses, events, today, today).filter(matchesView);
   const current = daily.filter(lesson => { const time = lessonTime(lesson, settings); return time && time.start <= now && time.end > now; });
   const next = daily.find(lesson => { const time = lessonTime(lesson, settings); return time && time.start > now; });
+  const currentKeys = new Set(current.map(lesson => lesson.key));
   const finished = daily.filter(lesson => { const time = lessonTime(lesson, settings); return time && time.end <= now; }).length;
   const visibleKeys = new Set(visible.map(lesson => lesson.key));
   const conflicts = courseConflicts(lessons).filter(({ a, b }) => visibleKeys.has(a.key) || visibleKeys.has(b.key));
   const conflictKeys = new Set(conflicts.flatMap(item => [item.a.key, item.b.key]));
   const classes = [...new Set(courses.filter(item => matchesEducation(item.payload)).map(item => item.payload.className || '未分班'))].sort();
   const historyEvents = courseSubstitutions(courses, events).filter(event => {
-    const course = courses.find(item => item.id === event.course_id);
+    const course = coursesById.get(event.course_id);
     return matchesEducation(course.payload) && Boolean(className) && (course.payload.className || '未分班') === className;
   });
   const lessonLabel = lesson => [lesson.title, lesson.className, lesson.room].filter(Boolean).join(' · ');
@@ -149,17 +158,17 @@ export function CourseBoard({ data, Modal, mutate, records, onNotify, onEdit, on
         <colgroup><col className="planner-period-column" />{WEEKDAYS.map(day => <col key={day} />)}</colgroup>
         <thead><tr><th scope="col">节次</th>{WEEKDAYS.map((day, index) => <th scope="col" key={day} aria-current={shiftDate(monday, index) === today ? 'date' : undefined}>{day}<small>{Number(shiftDate(monday, index).slice(8))}</small></th>)}</tr></thead>
         <tbody>{Array.from({ length: Math.max(1, settings.bells.length, ...visible.map(lesson => lesson.order)) }, (_, index) => index + 1).map(order =>
-          <tr key={order}><th scope="row">{order}</th>{WEEKDAYS.map((day, index) => <td key={day}>
-            {!visible.some(lesson => lesson.order === order && lesson.date === shiftDate(monday, index)) &&
+          <tr key={order}><th scope="row">{order}</th>{WEEKDAYS.map((day, index) => { const date = shiftDate(monday, index); const slotLessons = lessonsBySlot.get(`${date}:${order}`) || []; return <td key={day}>
+            {!slotLessons.length &&
               <button type="button" className="course-empty-slot" aria-label={`添加${day}第${order}节课程`} title={`添加${day}第${order}节课程`}
                 onClick={() => addSlot(index, order)}><Plus size={14} /></button>}
-            {visible.filter(lesson => lesson.order === order && lesson.date === shiftDate(monday, index)).map(lesson =>
-              <button className={`planner-course planner-tone-${courseTone(lesson.title)}${current.some(item => item.key === lesson.key) ? ' is-current' : ''}${next?.key === lesson.key ? ' is-next' : ''}`}
+            {slotLessons.map(lesson =>
+              <button className={`planner-course planner-tone-${courseTone(lesson.title)}${currentKeys.has(lesson.key) ? ' is-current' : ''}${next?.key === lesson.key ? ' is-next' : ''}`}
                 key={lesson.key} aria-label={`${day}第${order}节 ${lesson.title}`} title={lessonLabel(lesson)} onClick={() => setDialog({ type: 'lesson', lesson })}>
                 <strong>{lesson.title}</strong>{mode === 'mine' ? lesson.className && <small>{lesson.className}</small> : lesson.teacher && <small>{lesson.teacher}</small>}
                 {lesson.room && <small>{lesson.room}</small>}{lesson.changed && <small>已调整</small>}{conflictKeys.has(lesson.key) && <CircleAlert size={12} aria-label="时间冲突" />}
               </button>)}
-          </td>)}</tr>)}</tbody>
+          </td>; })}</tr>)}</tbody>
       </table></>}
     {dialog?.type === 'settings' && <Settings Modal={Modal} value={settings} onNotify={onNotify} onClose={() => setDialog(null)} onSave={async draft => {
       await mutate('/planner/course-settings', { method: 'PUT', body: draft });
@@ -171,7 +180,7 @@ export function CourseBoard({ data, Modal, mutate, records, onNotify, onEdit, on
     {mode === 'history' && <section className={`course-history-page${!historyEvents.length ? ' is-empty' : ''}`} aria-label="代课记录">
       <p className="course-history-hint">自动提取班级课表中的代课安排，无需手动输入。</p>
       {!historyEvents.length && <p className="muted">{needsClass ? '请选择班级' : '暂无代课记录'}</p>}
-      {[...historyEvents].reverse().map(event => { const course = courses.find(item => item.id === event.course_id); return <article key={event.id} className="course-history-row">
+      {[...historyEvents].reverse().map(event => { const course = coursesById.get(event.course_id); return <article key={event.id} className="course-history-row">
         <strong>{course.payload.title} · {course.payload.className || '未分班'}</strong><span>{event.payload.date} 第{event.payload.order}节</span>
         <span>原授课：{course.payload.teacher} · 代课：{event.payload.teacher}</span>
         {event.payload.reason && <small>原因：{event.payload.reason}</small>}
