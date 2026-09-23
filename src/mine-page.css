@@ -10,8 +10,13 @@
 .mine-avatar-entry{padding:0;flex-shrink:0;border-radius:50%}
 .mine-avatar-entry:focus-visible{outline:2px solid var(--brand);outline-offset:3px}
 .mine-identity>div{min-width:0}
+.mine-identity-copy{min-width:0;flex:1}
 .mine-identity h2{font-size:22px;overflow-wrap:anywhere;margin:0 0 5px}
 .mine-identity p{color:#6b7f94;font-size:12px;overflow-wrap:anywhere}
+.mine-account-id{display:flex;align-items:center;gap:5px;max-width:100%;padding:2px 0 0;color:#6b7f94;font-size:11px;text-align:left}
+.mine-account-id>span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mine-account-id>svg{flex-shrink:0}
+.mine-account-id:hover{color:var(--brand-strong)}
 .mine-statistics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;text-align:center}
 .mine-statistics>div{display:flex;flex-direction:column;gap:6px}
 .mine-statistics strong{font-size:25px;font-weight:650;font-variant-numeric:tabular-nums;color:#193957}

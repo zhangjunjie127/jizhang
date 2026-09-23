@@ -15,6 +15,7 @@ import { createAccountServices } from './account-services.mjs';
 import { createAccountDeletionStore } from './account-deletion.mjs';
 import { createPlannerStore } from './planner.mjs';
 import { createTaskPhotoStore } from './task-photos.mjs';
+import { createAccountId, migrateAccountIds } from './account-ids.mjs';
 import {
   PERSONAS, ageOn, cleanText, fail, iso, passwordHash, systemPrompt,
   tokenHash, tools, validateRecord, verifyPassword,
@@ -313,6 +314,9 @@ const checkin = createCheckInRunner({
   onError: error => console.warn('Check-in deferred:', error.message),
 });
 
+const accountIdMigration = migrateAccountIds(db);
+if (accountIdMigration.changed) console.log(`Migrated ${accountIdMigration.changed} account ID(s) to 10-digit numeric IDs`);
+
 async function readBody(req, maxBytes = 128 * 1024) {
   let size = 0;
   const chunks = [];
@@ -373,7 +377,7 @@ const server = http.createServer(async (req, res) => {
         ageOn(body.birthday);
         const hash = passwordHash(body.password);
         const name = cleanText(body.name, 24, '昵称');
-        const id = randomUUID();
+        const id = createAccountId(db);
         if (db.prepare('SELECT id FROM users WHERE username=?').get(username)) fail('账号已存在', 409);
         db.prepare('INSERT INTO users (id,username,password,name,birthday,created) VALUES (?,?,?,?,?,?)')
           .run(id, username, hash, name, body.birthday, iso());

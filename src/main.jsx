@@ -582,6 +582,7 @@ function App() {
         onAssistant={() => { setMineView('assistant'); window.scrollTo({ top: 0 }); }} onPrivacy={() => setModal({ type: 'privacy' })}
         onService={service => setModal({ type: 'account-service', service })}
         onAccount={() => setModal({ type: 'account-settings' })}
+        onNotify={notify}
         onUsage={async () => { try { setUsage(await request('/usage')); setModal({ type: 'usage' }); } catch (error) { notify(error.message); } }} />}
       {page === 'mine' && mineView === 'messages' && <SystemMessages key={state.user.id} userId={state.user.id} onBack={() => { setMineView('home'); window.scrollTo({ top: 0 }); }} />}
       {page === 'mine' && mineView === 'assistant' && <main className="preferences-page assistant-settings-page">
