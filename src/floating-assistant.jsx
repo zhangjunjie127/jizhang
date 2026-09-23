@@ -56,7 +56,9 @@ export function AssistantEdge({ onOpen, active, unread }) {
   const drag = useRef(null);
   const moved = useRef(false);
   function clamp(x, y) {
-    return { x: x < innerWidth / 2 ? 0 : Math.max(0, innerWidth - ASSISTANT_WIDTH), y: Math.max(16, Math.min(innerHeight - ASSISTANT_HEIGHT - 16, y)) };
+    const dockLeft = x < innerWidth / 2;
+    const height = dockLeft ? ASSISTANT_WIDTH : ASSISTANT_HEIGHT;
+    return { x: dockLeft ? 0 : Math.max(0, innerWidth - ASSISTANT_WIDTH), y: Math.max(16, Math.min(innerHeight - height - 16, y)) };
   }
   useEffect(() => {
     const resize = () => setPosition(previous => previous ? clamp(previous.x, previous.y) : null);
