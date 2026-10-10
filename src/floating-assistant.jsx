@@ -13,6 +13,32 @@ import { AssistantFrames } from './assistant-frames';
 export const NativeAssistant = registerPlugin('FloatingAssistant');
 export const overlaySession = window.__ZAIZAI_OVERLAY__ || null;
 
+// Mount inside the app-lock boundary so pending actions wait for unlock.
+export function AssistantMainActions({ userId, onAction }) {
+  const callback = useRef(onAction);
+  callback.current = onAction;
+  useEffect(() => {
+    if (!isNative || overlaySession) return;
+    let active = true, listener, consuming = false;
+    const consume = async () => {
+      if (!active || consuming || document.hidden) return;
+      consuming = true;
+      try {
+        const { action } = await NativeAssistant.consumeMainAction({ userId, base: getBase() });
+        if (active && ['add', 'receipt', 'ledger', 'tasks', 'health', 'mine'].includes(action)) callback.current(action);
+      } catch { /* Older installed native hosts do not expose this method. */ }
+      finally { consuming = false; }
+    };
+    NativeAssistant.addListener('foreground', consume).then(handle => {
+      if (active) { listener = handle; consume(); } else handle.remove();
+    }).catch(() => {});
+    window.addEventListener('focus', consume);
+    document.addEventListener('visibilitychange', consume);
+    return () => { active = false; listener?.remove(); window.removeEventListener('focus', consume); document.removeEventListener('visibilitychange', consume); };
+  }, [userId]);
+  return null;
+}
+
 export function DesktopAssistantLifecycle({ userId, suspended, onRunningChange }) {
   const callback = useRef(onRunningChange);
   callback.current = onRunningChange;

@@ -2,7 +2,7 @@ import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Camera, ImagePlus, X } from 'lucide-react';
 import { request } from './api';
 
-async function preparePhoto(file) {
+export async function preparePhoto(file) {
   if (!file.type.startsWith('image/') || file.size > 20 * 1024 * 1024) throw new Error('请选择20MB以内的图片');
   let bitmap;
   try { bitmap = await createImageBitmap(file); } catch { throw new Error('无法读取图片，请使用JPG、PNG或WebP格式'); }

@@ -9,20 +9,54 @@ food database, commerce, community or paid services.
 Implemented: per-day nutrition summary, food search and manual entries, photo
 recognition with editable confirmation, exercise and water logs, existing weight
 history/chart, user-defined targets, menstrual records, bowel logs, overnight
-sleep logs, and named daily health-habit check-ins.
+sleep logs, and medical records. Health-habit creation and home entries have
+been removed; existing check-ins remain editable in daily history.
 
 The home layout follows the supplied reference: food search, weight-management
 band, food/exercise summary, and a two-column record grid. Empty cards show no
-fabricated measurements. The existing bottom add control opens all record types.
+fabricated measurements. The existing bottom add control follows the current
+view; on the home page it opens the record menu.
+The home has no date selector and always summarizes today. Date queries belong
+to individual detail views (and independently to each medical tab). Nutrition,
+water and daily history default to today; other record lists default to all dates
+and allow clearing the date filter. Period queries match the recorded date span.
+Weight date queries filter the record list; the overall trend and latest-weight
+summary remain unchanged. New records default to today, never the queried date;
+users may still change the date in the editor.
 Sleep intervals cannot overlap or exceed 24 hours; identical habits cannot be
 checked in twice on one date. All three new record types support edit/delete.
 
-Checkups and medical visits have separate home cards and editable histories.
+Checkups, medical visits and vision examinations share one Health Archive home
+entry, with Checkup, Medical Visit and Vision tabs. The bottom add button and inline add button create the
+active tab's record type. Returning home and reopening preserves the selected
+tab during the current page session. The home add menu also links to this archive.
 Report attachments reuse owner-scoped photo storage (up to six images, no PDF
-support in this version). No report is sent to AI. Visit follow-up times reuse
+support in this version). Reports are sent to AI only through the explicit,
+separately consented transcription flow described below. Visit follow-up times reuse
 native local notifications and foreground web reminders; permission is required
 for native delivery. Notification text omits clinical details. These records
 remain outside assistant context and `/api/state`.
+
+Vision records require only the examination date. Institution, left/right
+unaided and corrected acuity, sphere, cylinder, axis, pupillary distance, notes
+and photos are optional. Values retain the report's notation and signs without
+conversion or interpretation. The editor uses five short steps; histories sort
+by examination date. No diagnosis, treatment advice or automatic reminders are
+generated from these values.
+
+New Checkup, Medical Visit and Vision forms offer camera/album transcription.
+`POST /api/health/medical-recognize` requires authentication, `consent: true`, a
+supported kind and a validated image; per-account rate limits apply. The
+configured AI provider must support image input. Only whitelisted draft fields
+are returned, not arbitrary model fields, follow-up dates or identifiers.
+Uncertain/missing dates remain blank and require correction.
+
+Recognition does not create entries or upload photos to account storage.
+Users review and edit the result before saving; cancellation discards the
+draft. A separate checkbox controls attaching the source photo on save.
+Provider processing/retention follows its own policy and is disclosed before
+transmission. The app stores no report in chat history and runs no AI tools.
+Accuracy is not guaranteed: signs, laterality and values require user review.
 
 The bundled catalog is a starter list of 12 foods plus the user's saved foods.
 It is not a comprehensive branded-food database. Food preparation and serving

@@ -91,6 +91,34 @@ test('health API enforces authentication, consent, account isolation and explici
   assert.equal(snapshot.records.some(row => row.id === entry.id), false);
   await api(`/health/entries/${entry.id}`, { token: user.token, method: 'DELETE', body: { revision: entry.revision } });
 });
+test('health sync API stores only authenticated account preferences and rejects forged authorization', async () => {
+  assert.equal((await api('/health/sync')).status, 401);
+  const initial = await api('/health/sync', { token: user.token });
+  assert.equal(initial.status, 200);
+  assert.equal(initial.data.cloudAuthorized, false);
+  const saved = await api('/health/sync', { token: user.token, method: 'PUT', body: {
+    metrics: ['steps'], revision: initial.data.revision,
+  } });
+  assert.equal(saved.status, 200);
+  assert.deepEqual((await api('/health/sync', { token: user.token })).data.metrics, ['steps']);
+  assert.equal((await api('/health/sync', { token: other.token })).data.metrics.length, 5);
+  assert.equal((await api('/health/sync', { token: user.token, method: 'PUT', body: {
+    metrics: ['steps'], revision: saved.data.revision, cloudAuthorized: true,
+  } })).status, 400);
+  assert.equal((await api('/health/sync', { token: user.token, method: 'PUT', body: {
+    metrics: [], revision: initial.data.revision,
+  } })).status, 409);
+  assert.equal((await api('/state', { token: user.token })).data.healthSync, undefined);
+});
+test('medical report extraction requires authentication and explicit photo consent', async () => {
+  assert.equal((await api('/health/medical-recognize', { method: 'POST', body: {} })).status, 401);
+  assert.equal((await api('/health/medical-recognize', { token: user.token, method: 'POST',
+    body: { kind: 'vision', consent: false, image: 'bad' } })).status, 400);
+  assert.equal((await api('/health/medical-recognize', { token: user.token, method: 'POST',
+    body: { kind: 'other', consent: true, image: 'bad' } })).status, 400);
+  assert.equal((await api('/health/medical-recognize', { token: user.token, method: 'POST',
+    body: { kind: 'vision', consent: true, image: 'data:image/png;base64,iVBORw0KGgo=' } })).status, 503);
+});
 test('large ledger amounts persist and export exact cents while rejecting one hundred million', async () => {
   const account = (await api('/register', { method: 'POST', body: {
     username: 'amount-boundary', password: 'test-password-123', name: 'Limit', birthday: '2000-01-01', invite: 'test-invite',

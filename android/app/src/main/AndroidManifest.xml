@@ -47,6 +47,11 @@
                 android:resource="@xml/file_paths"></meta-data>
         </provider>
         <activity
+            android:name=".AssistantImageActivity"
+            android:exported="false"
+            android:excludeFromRecents="true"
+            android:theme="@android:style/Theme.Material.Light.NoActionBar" />
+        <activity
             android:name=".AssistantVoiceActivity"
             android:exported="false"
             android:excludeFromRecents="true"

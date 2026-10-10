@@ -1,6 +1,7 @@
 import { ageOn, cleanText, fail, iso } from './domain.mjs';
 import { healthToday, MEALS, SYMPTOMS } from '../shared/health.mjs';
 import { createTaskPhotoStore } from './task-photos.mjs';
+import { MEDICAL_KINDS, VISION_FIELDS } from '../shared/medical.mjs';
 
 function number(value, min, max, label) {
   if ((typeof value !== 'number' && typeof value !== 'string') || String(value).trim() === '' ||
@@ -46,11 +47,13 @@ export function healthEntry(input, user) {
     return { ...common, start: new Date(start).toISOString(), end: new Date(end).toISOString(), quality: input.quality };
   }
   if (input.kind === 'habit') return { ...common, name: cleanText(input.name, 40, '习惯名称') };
-  if (['checkup', 'visit'].includes(input.kind)) {
+  if (MEDICAL_KINDS.includes(input.kind)) {
     const photos = input.photos ?? [];
     if (!Array.isArray(photos) || photos.length > 6 || photos.some(id => typeof id !== 'string' || !/^[0-9a-f-]{36}$/.test(id))) fail('报告照片格式无效，最多6张');
     const optional = (key, max, label) => input[key] ? cleanText(input[key], max, label) : '';
-    const detail = { ...common, institution: cleanText(input.institution, 100, '机构名称'), photos: [...new Set(photos)] };
+    const detail = { ...common, institution: input.kind === 'vision' ? optional('institution', 100, '机构名称') : cleanText(input.institution, 100, '机构名称'), photos: [...new Set(photos)] };
+    if (input.kind === 'vision') return { ...detail, note: optional('note', 2000, '备注'),
+      ...Object.fromEntries(VISION_FIELDS.map(([key, label]) => [key, optional(key, 40, label)])) };
     if (input.kind === 'checkup') return { ...detail, items: cleanText(input.items, 500, '检查项目'), note: optional('note', 2000, '备注') };
     const followUp = input.followUp || '';
     if (followUp && (typeof followUp !== 'string' || !/^\d{4}-\d{2}-\d{2}T/.test(followUp) || !Number.isFinite(Date.parse(followUp)) ||
@@ -63,7 +66,7 @@ export function healthEntry(input, user) {
     kcal: number(input.kcal ?? 0, 0, 20000, '运动热量'),
   };
   if (input.kind === 'period') {
-    if (user.gender !== 'female') fail('请先在个人资料中选择女性后使用生理期记录', 403);
+    if (user.gender !== 'female') fail('请先在个人资料中选择女性后使用生理周期记录', 403);
     const end = input.end ? date(input.end) : null;
     if (end && end < common.date) fail('结束日期不能早于开始日期');
     if (!['light', 'medium', 'heavy'].includes(input.flow)) fail('请选择经量');
@@ -134,7 +137,7 @@ export function createHealthStore(db) {
   function save(userId, body, id) {
     const profile = user(userId);
     const payload = healthEntry(body, profile);
-    if (['checkup', 'visit'].includes(payload.kind)) photos.check(userId, payload);
+    if (MEDICAL_KINDS.includes(payload.kind)) photos.check(userId, payload);
     const prior = id ? db.prepare('SELECT * FROM health_entries WHERE id=? AND user_id=?').get(id, userId) : null;
     if (id && !prior) fail('记录不存在', 404);
     if (prior && (!Number.isInteger(body.revision) || body.revision !== prior.revision)) fail('记录已更新，请刷新后重试', 409);
@@ -152,7 +155,7 @@ export function createHealthStore(db) {
       if (periods.some(row => {
         const p = JSON.parse(row.payload);
         return row.id !== id && p.kind === 'period' && p.date <= end && (p.end || '9999-12-31') >= payload.date;
-      })) fail('这段日期已存在生理期记录，请修改原记录');
+      })) fail('这段日期已存在生理周期记录，请修改原记录');
     }
     if (['sleep', 'habit'].includes(payload.kind)) {
       const rows = db.prepare('SELECT id,payload FROM health_entries WHERE user_id=?').all(userId);
@@ -176,7 +179,7 @@ export function createHealthStore(db) {
   function remove(userId, id, revision) {
     const entry = db.prepare('SELECT * FROM health_entries WHERE id=? AND user_id=?').get(id, userId);
     if (!entry) fail('记录不存在', 404);
-    if (JSON.parse(entry.payload).kind === 'period' && user(userId).gender !== 'female') fail('当前性别不能操作生理期记录', 403);
+    if (JSON.parse(entry.payload).kind === 'period' && user(userId).gender !== 'female') fail('当前性别不能操作生理周期记录', 403);
     if (!Number.isInteger(revision) || revision !== entry.revision) fail('记录已更新，请刷新后重试', 409);
     db.prepare('DELETE FROM health_entries WHERE id=? AND user_id=?').run(id, userId);
     return state(userId);

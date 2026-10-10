@@ -49,6 +49,25 @@ public class AssistantOverlayService extends Service {
     private int unread;
     private BroadcastReceiver screenReceiver;
     private Runnable voiceTimeout;
+    private String pendingMainAction;
+    private ValueCallback<Uri[]> fileCallback;
+    private String fileRequestId;
+
+    String consumeMainAction(String user, String server) {
+        if (!belongsTo(user) || !java.util.Objects.equals(base, server)) return "";
+        String action = pendingMainAction;
+        pendingMainAction = null;
+        return action == null ? "" : action;
+    }
+    boolean ownsFileRequest(String id) { return id != null && id.equals(fileRequestId) && fileCallback != null; }
+    void finishFileRequest(String id, Uri[] files) {
+        if (!ownsFileRequest(id)) return;
+        ValueCallback<Uri[]> callback = fileCallback;
+        fileCallback = null; fileRequestId = null;
+        if (catRoot != null) catRoot.setVisibility(View.VISIBLE);
+        if (root != null) layout(expanded && !requiresUnlock);
+        callback.onReceiveValue(files);
+    }
 
     static boolean dismissedFor(Context context, String user) {
         return user.equals(context.getSharedPreferences("assistant_overlay", MODE_PRIVATE).getString("dismissed_user", ""));
@@ -59,7 +78,7 @@ public class AssistantOverlayService extends Service {
         stopSelf();
     }
     void hostHidden() {
-        if (root != null && !preparing) layout(false);
+        if (root != null && !preparing && fileCallback == null) layout(false);
     }
     @Override public void onTaskRemoved(Intent rootIntent) {
         // Removing the activity task must leave this started service and its call intact.
@@ -209,6 +228,28 @@ public class AssistantOverlayService extends Service {
             }
         });
         web.setWebChromeClient(new WebChromeClient() {
+            @Override public boolean onShowFileChooser(WebView view, ValueCallback<Uri[]> callback, FileChooserParams options) {
+                if (fileCallback != null) finishFileRequest(fileRequestId, null);
+                if (requiresUnlock || !expanded || view.getUrl() == null || !view.getUrl().startsWith(ORIGIN + "/")) {
+                    callback.onReceiveValue(null);
+                    return true;
+                }
+                fileCallback = callback;
+                fileRequestId = java.util.UUID.randomUUID().toString();
+                try {
+                    cancelPanelMotion();
+                    startActivity(new Intent(AssistantOverlayService.this, AssistantImageActivity.class)
+                        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                        .putExtra("requestId", fileRequestId).putExtra("capture", options.isCaptureEnabled())
+                        .putExtra("multiple", options.getMode() == FileChooserParams.MODE_OPEN_MULTIPLE));
+                    root.setVisibility(View.INVISIBLE);
+                    catRoot.setVisibility(View.INVISIBLE);
+                } catch (Exception error) {
+                    finishFileRequest(fileRequestId, null);
+                    Toast.makeText(AssistantOverlayService.this, "无法打开拍照或相册，请重试", Toast.LENGTH_LONG).show();
+                }
+                return true;
+            }
             @Override public void onPermissionRequest(PermissionRequest request) {
                 main.post(() -> {
                     if (voicePrepared && ORIGIN.equals(request.getOrigin().toString().replaceAll("/$", ""))
@@ -447,7 +488,7 @@ public class AssistantOverlayService extends Service {
         cancelPanelMotion();
         content.setLayoutParams(new FrameLayout.LayoutParams(-1, -1));
         expanded = open;
-        root.setVisibility(open ? View.VISIBLE : View.INVISIBLE);
+        root.setVisibility(open && fileCallback == null ? View.VISIBLE : View.INVISIBLE);
         int width = Math.min(dp(390), screenWidth() - dp(16));
         int height = Math.min(dp(570), screenHeight() - dp(100));
         params.width = open ? width : dp(62.4f);
@@ -498,6 +539,22 @@ public class AssistantOverlayService extends Service {
         }
     }
     private class Commands {
+        @JavascriptInterface public void openMain(String action) {
+            if (!"add".equals(action) && !"receipt".equals(action)
+                && !"ledger".equals(action) && !"tasks".equals(action)
+                && !"health".equals(action) && !"mine".equals(action)) return;
+            main.post(() -> {
+                pendingMainAction = action;
+                try {
+                    startActivity(new Intent(AssistantOverlayService.this, MainActivity.class)
+                        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_SINGLE_TOP));
+                    layout(false);
+                } catch (Exception error) {
+                    pendingMainAction = null;
+                    Toast.makeText(AssistantOverlayService.this, "无法打开应用，请点击应用图标后重试", Toast.LENGTH_LONG).show();
+                }
+            });
+        }
         @JavascriptInterface public void setUnread(int count) {
             main.post(() -> { unread = Math.max(0, count); syncCat(); });
         }
@@ -536,6 +593,8 @@ public class AssistantOverlayService extends Service {
         layout(expanded);
     }
     private void destroyWindow() {
+        if (fileCallback != null) finishFileRequest(fileRequestId, null);
+        pendingMainAction = null;
         cancelPanelMotion();
         pageReady = false; pendingOpen = false;
         if (voiceTimeout != null) main.removeCallbacks(voiceTimeout);

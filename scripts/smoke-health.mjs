@@ -10,12 +10,25 @@ const { chromium } = require(process.env.PLAYWRIGHT_PATH || 'playwright');
 const dir = mkdtempSync(join(tmpdir(), 'zaizai-health-ui-'));
 const listen = server => new Promise(resolve => server.listen(0, '127.0.0.1', () => resolve(server.address().port)));
 const close = server => new Promise(resolve => server.close(resolve));
-let validFood = false, aiCalls = 0;
+let validFood = false, aiCalls = 0, validReport = true, reportCalls = 0;
 const ai = http.createServer(async (req, res) => {
   let raw = ''; for await (const part of req) raw += part;
   const body = JSON.parse(raw);
   assert.equal(body.tools, undefined);
   assert.ok(body.messages[1].content.some(item => item.type === 'image_url'));
+  if (body.messages[0].content.includes('仅抄录报告照片')) {
+    reportCalls++;
+    const kind = body.messages[0].content.includes('当前归档类型：视力') ? 'vision'
+      : body.messages[0].content.includes('当前归档类型：就医') ? 'visit' : 'checkup';
+    const draft = { date: '2026-10-01', institution: '报告识别医院',
+      ...(kind === 'vision' ? { leftUnaided: '0.8', rightUnaided: '5.0', leftCorrected: '1.0', rightCorrected: '5.1',
+        leftSphere: '-2.25', rightSphere: '+1.00', leftCylinder: '-0.50', rightCylinder: '', leftAxis: '90', rightAxis: '', pupillaryDistance: '63' }
+        : kind === 'checkup' ? { items: '血常规', note: '原文备注' } : { department: '内科', reason: '复查', advice: '原文医嘱' }),
+      name: '不应返回的姓名', followUp: '2099-10-20', user_id: 'not-owner' };
+    res.setHeader('Content-Type', 'application/json');
+    res.end(JSON.stringify({ choices: [{ message: { content: JSON.stringify({ isReport: validReport, draft }) } }] }));
+    return;
+  }
   aiCalls++;
   res.setHeader('Content-Type', 'application/json');
   res.end(JSON.stringify({ choices: [{ message: { content: JSON.stringify(validFood
@@ -64,8 +77,28 @@ try {
   };
   await go();
   const dashboard = page.locator('.health-dashboard');
+  assert.equal(await dashboard.getByLabel('健康记录日期', { exact: true }).count(), 0, 'Home has no date filter');
+  await dashboard.getByRole('button', { name: '设备与数据同步', exact: true }).click();
+  await page.getByRole('checkbox', { name: '步数', exact: true }).waitFor();
+  assert.equal(await page.getByText('暂未接入', { exact: true }).count(), 3);
+  assert.equal(await page.getByRole('button', { name: '立即同步', exact: true }).isDisabled(), true);
+  await page.getByRole('checkbox', { name: '心率', exact: true }).uncheck();
+  await page.getByRole('button', { name: '保存偏好', exact: true }).click();
+  await page.getByText('同步偏好已保存到账号，尚未开启设备同步', { exact: true }).waitFor();
+  assert.deepEqual((await api('/health/sync', null, 'GET')).metrics, ['steps', 'sleep', 'exercise', 'weight']);
+  await go();
+  await dashboard.getByRole('button', { name: '设备与数据同步', exact: true }).click();
+  await page.getByRole('checkbox', { name: '心率', exact: true }).waitFor();
+  assert.equal(await page.getByRole('checkbox', { name: '心率', exact: true }).isChecked(), false);
+  for (const width of [320, 390, 1280]) {
+    await page.setViewportSize({ width, height: 844 });
+    assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
+    await page.screenshot({ path: `artifacts/health-sync-${width}.png`, fullPage: true });
+  }
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.getByRole('button', { name: '返回健康首页', exact: true }).click();
   assert.equal(await dashboard.getByRole('navigation', { name: '健康视图' }).count(), 0);
-  await dashboard.getByRole('button', { name: '打开生理期', exact: true }).click();
+  await dashboard.getByRole('button', { name: '打开生理周期', exact: true }).click();
   await page.getByRole('dialog', { name: '选择性别' }).waitFor();
   await page.getByRole('button', { name: '取消', exact: true }).click();
   assert.equal((await api('/state', null, 'GET')).user.gender, '');
@@ -97,10 +130,10 @@ try {
   await page.getByLabel('自设每日饮食热量（千卡，可不填）', { exact: true }).fill('1800');
   await page.getByRole('button', { name: '保存', exact: true }).click();
   await page.getByRole('dialog').waitFor({ state: 'detached' });
-  await dashboard.getByRole('button', { name: '打开生理期', exact: true }).click();
+  await dashboard.getByRole('button', { name: '打开生理周期', exact: true }).click();
   await page.getByLabel('性别', { exact: true }).selectOption('female');
   await page.getByRole('button', { name: '保存', exact: true }).click();
-  await page.getByRole('button', { name: '新增生理期', exact: true }).click();
+  await page.getByRole('button', { name: '新增生理周期', exact: true }).click();
   await page.getByLabel('腹痛', { exact: true }).check();
   await page.getByRole('button', { name: '保存', exact: true }).click();
   await page.getByRole('dialog').waitFor({ state: 'detached' });
@@ -136,10 +169,11 @@ try {
   assert.equal(aiCalls, 2);
   await go();
   assert.equal(await page.locator('.health-food-summary strong').textContent(), '1,120');
-  for (const [label, title] of [['排便', '记录排便'], ['睡眠', '记录睡眠'], ['健康习惯', '健康习惯打卡']]) {
+  assert.equal(await page.locator('.health-tile.habit, .health-tile.checkup, .health-tile.visit').count(), 0);
+  await api('/health/entries', { kind: 'habit', date: new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Shanghai' }), name: '拉伸', requestId: crypto.randomUUID() });
+  for (const [label, title] of [['排便', '记录排便'], ['睡眠', '记录睡眠']]) {
     await page.locator('.health-tile').filter({ has: page.locator('strong', { hasText: label }) }).click();
     await page.getByRole('button', { name: title, exact: true }).click();
-    if (label === '健康习惯') await page.getByLabel('习惯名称', { exact: true }).fill('拉伸');
     await page.getByRole('button', { name: '保存', exact: true }).click();
     await page.getByRole('dialog').waitFor({ state: 'detached' });
     await dashboard.getByRole('button', { name: '返回健康首页', exact: true }).click();
@@ -148,7 +182,8 @@ try {
   const extraEntries = (await api('/health/dashboard', null, 'GET')).entries;
   for (const kind of ['bowel', 'sleep', 'habit']) assert.ok(extraEntries.some(e => e.kind === kind));
   for (const kind of ['checkup', 'visit']) {
-    await page.locator(`.health-tile.${kind}`).click();
+    await page.locator('.health-tile.medical').click();
+    await page.getByRole('tab', { name: kind === 'checkup' ? '体检' : '就医', exact: true }).click();
     await page.getByRole('button', { name: kind === 'checkup' ? '记录体检' : '记录就医', exact: true }).click();
     await page.getByLabel(kind === 'checkup' ? '体检机构' : '医院', { exact: true }).fill('健康测试医院');
     if (kind === 'checkup') {
@@ -198,7 +233,7 @@ try {
   assert.equal(reminders.entries.length, 1);
   assert.equal(reminders.entries[0].reason, undefined);
   await go();
-  for (const [label, editLabel, deleteLabel] of [['排便', '编辑排便 · 成形', '删除排便 · 成形'], ['睡眠', '编辑睡眠 · 一般', '删除睡眠 · 一般'], ['健康习惯', '编辑拉伸', '删除拉伸']]) {
+  for (const [label, editLabel, deleteLabel] of [['排便', '编辑排便 · 成形', '删除排便 · 成形'], ['睡眠', '编辑睡眠 · 一般', '删除睡眠 · 一般']]) {
     await page.locator('.health-tile').filter({ has: page.locator('strong', { hasText: label }) }).click();
     await page.getByRole('button', { name: editLabel, exact: true }).click();
     await page.getByRole('button', { name: '保存', exact: true }).click();
@@ -224,7 +259,10 @@ try {
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false, `Health fits ${width}px`);
   }
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.locator('.health-tile.habit').click();
+  await page.getByRole('button', { name: '查看健康记录', exact: true }).click();
+  await page.getByRole('button', { name: '编辑拉伸', exact: true }).click();
+  await page.getByRole('button', { name: '保存', exact: true }).click();
+  await page.getByRole('dialog').waitFor({ state: 'detached' });
   await page.getByRole('button', { name: '删除拉伸', exact: true }).click();
   await page.getByRole('button', { name: '确认删除', exact: true }).click();
   await page.getByRole('dialog').waitFor({ state: 'detached' });
@@ -232,15 +270,15 @@ try {
   await dashboard.getByRole('button', { name: '返回健康首页', exact: true }).click();
   await page.getByRole('button', { name: '添加健康记录', exact: true }).click();
   await page.getByRole('dialog', { name: '添加健康记录' }).waitFor();
-  assert.equal(await page.locator('.health-add-menu button').count(), 10);
+  assert.equal(await page.locator('.health-add-menu button').count(), 8);
+  assert.equal(await page.locator('.health-add-menu').getByRole('button', { name: '健康习惯', exact: true }).count(), 0);
   await page.getByRole('button', { name: '取消', exact: true }).count().then(async count => {
     if (count) await page.getByRole('button', { name: '取消', exact: true }).click();
     else await page.getByRole('dialog').getByRole('button', { name: '关闭', exact: true }).click();
   });
   for (const [kind, title] of [
-    ['weight', '记录体重'], ['water', '记录饮水'], ['period', '记录生理期'],
-    ['bowel', '记录排便'], ['sleep', '记录睡眠'], ['habit', '健康习惯打卡'],
-    ['checkup', '记录体检'], ['visit', '记录就医'],
+    ['weight', '记录体重'], ['water', '记录饮水'], ['period', '记录生理周期'],
+    ['bowel', '记录排便'], ['sleep', '记录睡眠'],
   ]) {
     await page.locator(`.health-tile.${kind}`).click();
     await page.getByRole('button', { name: '添加健康记录', exact: true }).click();
@@ -249,6 +287,29 @@ try {
     await page.getByRole('button', { name: '取消', exact: true }).click();
     await dashboard.getByRole('button', { name: '返回健康首页', exact: true }).click();
   }
+  await page.getByRole('button', { name: '添加健康记录', exact: true }).click();
+  await page.locator('.health-add-menu').getByRole('button', { name: '健康档案', exact: true }).click();
+  await page.getByRole('tablist', { name: '健康档案分类' }).waitFor();
+  for (const [kind, label] of [['checkup', '体检'], ['visit', '就医']]) {
+    await page.getByRole('tab', { name: label, exact: true }).click();
+    assert.equal(await page.getByRole('tab', { name: label, exact: true }).getAttribute('aria-selected'), 'true');
+    const panel = page.getByRole('tabpanel', { name: label, exact: true });
+    assert.equal(await panel.locator('.health-record').count(), 1);
+    assert.equal(await panel.getByRole('button', { name: `编辑${label} · 健康测试医院`, exact: true }).count(), 1);
+    await page.getByRole('button', { name: '添加健康记录', exact: true }).click();
+    await page.getByRole('dialog', { name: `记录${label}`, exact: true }).waitFor();
+    await page.getByRole('button', { name: '取消', exact: true }).click();
+    for (const width of [320, 390, 1280]) {
+      await page.setViewportSize({ width, height: 844 });
+      assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
+      await page.screenshot({ path: `artifacts/health-medical-${kind}-${width}.png`, fullPage: true });
+    }
+    await page.setViewportSize({ width: 390, height: 844 });
+  }
+  await page.getByRole('tab', { name: '就医', exact: true }).press('ArrowLeft');
+  assert.equal(await page.getByRole('tab', { name: '体检', exact: true }).getAttribute('aria-selected'), 'true');
+  await page.setViewportSize({ width: 390, height: 844 });
+  await dashboard.getByRole('button', { name: '返回健康首页', exact: true }).click();
   await page.getByRole('button', { name: '饮食运动详情', exact: true }).click();
   await page.getByRole('button', { name: '添加健康记录', exact: true }).click();
   await page.getByRole('dialog', { name: '添加健康记录', exact: true }).waitFor();
@@ -261,7 +322,7 @@ try {
   await dashboard.getByText('23.9', { exact: true }).waitFor();
   await api('/account/profile', { gender: 'male' }, 'PATCH');
   await go();
-  assert.equal(await dashboard.getByRole('button', { name: '打开生理期', exact: true }).count(), 0);
+  assert.equal(await dashboard.getByRole('button', { name: '打开生理周期', exact: true }).count(), 0);
   assert.equal((await api('/health/dashboard', null, 'GET')).entries.some(e => e.kind === 'period'), false);
   await api('/account/profile', { gender: 'female' }, 'PATCH');
   assert.equal((await api('/health/dashboard', null, 'GET')).entries.filter(e => e.kind === 'period').length, 1);
@@ -292,6 +353,127 @@ try {
   assert.ok(saveBounds.y >= 0 && saveBounds.y + saveBounds.height <= 430, 'Save remains reachable in keyboard-sized viewport');
   await page.getByRole('button', { name: '取消', exact: true }).click();
   await page.setViewportSize({ width: 390, height: 844 });
+  await go();
+  await page.locator('.health-tile.medical').click();
+  for (const [kind, label] of [['checkup', '体检'], ['visit', '就医'], ['vision', '视力']]) {
+    await page.getByRole('tab', { name: label, exact: true }).click();
+    const before = (await api('/health/dashboard', null, 'GET')).entries.length;
+    await page.getByRole('button', { name: '添加健康记录', exact: true }).click();
+    const photoEntry = page.getByRole('button', { name: '拍照识别报告', exact: true });
+    const entryBounds = await photoEntry.boundingBox();
+    const rowBounds = await page.locator('.health-medical-entry-mode').boundingBox();
+    assert.ok(Math.abs(entryBounds.x + entryBounds.width - rowBounds.x - rowBounds.width) < 2, `${kind} photo entry aligns right`);
+    await photoEntry.click();
+    assert.deepEqual(await page.locator('.health-photo-buttons button').allTextContents(), ['相册', '拍照']);
+    await page.getByRole('button', { name: '返回', exact: true }).click();
+    await page.getByRole('button', { name: '拍照识别报告', exact: true }).click();
+    await page.getByLabel('选择识别报告', { exact: true }).setInputFiles({ name: 'report.png', mimeType: 'image/png', buffer: Buffer.from(image, 'base64') });
+    await page.getByAltText('待识别报告', { exact: true }).waitFor();
+    const recognizeReport = page.getByRole('button', { name: '识别并填入表单', exact: true });
+    assert.equal(await recognizeReport.isDisabled(), true);
+    await page.getByLabel(/同意将此报告照片/).check();
+    if (kind === 'checkup') {
+      validReport = false;
+      await recognizeReport.click();
+      await page.getByText('未识别到相关报告，请选择清晰的报告照片', { exact: true }).waitFor();
+      validReport = true;
+    }
+    await recognizeReport.click();
+    await page.getByText('识别可能有误，请逐项核对日期、左右眼和数值后保存。', { exact: true }).waitFor();
+    assert.equal((await api('/health/dashboard', null, 'GET')).entries.length, before);
+    assert.equal(await page.getByLabel(kind === 'vision' ? '检查机构（可不填）' : kind === 'checkup' ? '体检机构' : '医院', { exact: true }).inputValue(), '报告识别医院');
+    const count = kind === 'vision' ? 5 : 3;
+    for (let step = 0; step < count - 1; step++) {
+      if (kind === 'vision' && step === 1) {
+        assert.equal(await page.getByLabel('左眼裸眼视力', { exact: true }).inputValue(), '0.8');
+        await page.getByLabel('左眼裸眼视力', { exact: true }).fill('0.9');
+      }
+      if (kind === 'vision' && step === 2) {
+        assert.equal(await page.getByLabel('左眼球镜（D）', { exact: true }).inputValue(), '-2.25');
+        assert.equal(await page.getByLabel('右眼球镜（D）', { exact: true }).inputValue(), '+1.00');
+      }
+      if (kind === 'vision') {
+        await page.setViewportSize({ width: 320, height: 740 });
+        assert.equal(await page.locator('.health-editor').evaluate(el => el.scrollHeight > el.clientHeight + 2), false);
+        await page.screenshot({ path: `artifacts/health-vision-step-${step}.png` });
+      }
+      await page.getByRole('button', { name: '下一步', exact: true }).click();
+    }
+    await page.getByAltText('留档照片1', { exact: true }).waitFor();
+    await page.getByRole('button', { name: '保存', exact: true }).click();
+    await page.getByRole('dialog').waitFor({ state: 'detached' });
+    const records = (await api('/health/dashboard', null, 'GET')).entries;
+    assert.equal(records.length, before + 1);
+    const saved = records.find(record => record.kind === kind && record.institution === '报告识别医院');
+    assert.equal(saved.photos.length, 1);
+    assert.equal(saved.name, undefined);
+    if (kind === 'vision') assert.equal(saved.leftUnaided, '0.9');
+    if (kind === 'visit') assert.equal(saved.followUp, '');
+    await page.setViewportSize({ width: 390, height: 844 });
+  }
+  const beforeCancel = (await api('/health/dashboard', null, 'GET')).entries.length;
+  await page.getByRole('button', { name: '添加健康记录', exact: true }).click();
+  await page.getByRole('button', { name: '拍照识别报告', exact: true }).click();
+  await page.getByLabel('选择识别报告', { exact: true }).setInputFiles({ name: 'report.png', mimeType: 'image/png', buffer: Buffer.from(image, 'base64') });
+  await page.getByAltText('待识别报告', { exact: true }).waitFor();
+  await page.getByLabel(/同意将此报告照片/).check();
+  await page.getByRole('button', { name: '识别并填入表单', exact: true }).click();
+  await page.getByText('识别可能有误，请逐项核对日期、左右眼和数值后保存。', { exact: true }).waitFor();
+  await page.getByRole('button', { name: '取消', exact: true }).click();
+  assert.equal((await api('/health/dashboard', null, 'GET')).entries.length, beforeCancel);
+  assert.equal(reportCalls, 5);
+  await page.getByRole('button', { name: '编辑视力 · 报告识别医院', exact: true }).click();
+  await page.getByRole('button', { name: '下一步', exact: true }).click();
+  assert.equal(await page.getByLabel('左眼裸眼视力', { exact: true }).inputValue(), '0.9');
+  await page.getByRole('button', { name: '取消', exact: true }).click();
+  await page.getByRole('button', { name: '删除视力 · 报告识别医院', exact: true }).click();
+  await page.getByRole('button', { name: '确认删除', exact: true }).click();
+  await page.getByRole('dialog').waitFor({ state: 'detached' });
+  const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Shanghai' });
+  await go();
+  await page.getByRole('button', { name: '打开喝水记录', exact: true }).click();
+  await page.getByLabel('健康记录日期', { exact: true }).fill('2020-01-10');
+  await page.getByRole('button', { name: '添加健康记录', exact: true }).click();
+  assert.equal(await page.getByRole('dialog').getByLabel('日期', { exact: true }).inputValue(), today);
+  await page.getByRole('button', { name: '取消', exact: true }).click();
+  await page.getByRole('button', { name: '前一天', exact: true }).click();
+  assert.equal(await page.getByLabel('健康记录日期', { exact: true }).inputValue(), '2020-01-09');
+  await page.getByRole('button', { name: '返回健康首页', exact: true }).click();
+  assert.equal(await dashboard.getByLabel('健康记录日期', { exact: true }).count(), 0);
+  assert.ok((await page.getByRole('button', { name: '打开喝水记录', exact: true }).innerText()).includes(today));
+  await page.getByRole('button', { name: '饮食运动详情', exact: true }).click();
+  assert.equal(await page.getByLabel('健康记录日期', { exact: true }).inputValue(), today, 'Views do not inherit another view date');
+  await page.getByLabel('健康记录日期', { exact: true }).fill('2020-01-10');
+  await page.getByRole('button', { name: '添加早餐', exact: true }).click();
+  assert.equal(await page.getByRole('dialog').getByLabel('日期', { exact: true }).inputValue(), today);
+  await page.getByRole('button', { name: '取消', exact: true }).click();
+  await page.getByRole('button', { name: '返回健康首页', exact: true }).click();
+  for (const kind of ['weight', 'bowel', 'sleep', 'period', 'medical']) {
+    await page.locator(`.health-tile.${kind}`).click();
+    if (kind === 'medical') await page.getByRole('tab', { name: '体检', exact: true }).click();
+    const unfiltered = await dashboard.locator('.health-record').count();
+    assert.ok(unfiltered > 0, `${kind} has history`);
+    await page.getByLabel('健康记录日期', { exact: true }).fill('2020-01-10');
+    assert.equal(await dashboard.locator('.health-record').count(), 0, `${kind} filters by query date`);
+    await page.getByRole('button', { name: '添加健康记录', exact: true }).click();
+    const dialog = page.getByRole('dialog');
+    assert.equal(await dialog.getByLabel(kind === 'period' ? '开始日期' : kind === 'weight' ? '记录日期' : '日期', { exact: true }).inputValue(), today);
+    await page.getByRole('button', { name: '取消', exact: true }).click();
+    if (kind === 'medical') {
+      await page.getByRole('tab', { name: '就医', exact: true }).click();
+      assert.equal(await page.getByLabel('健康记录日期', { exact: true }).inputValue(), '', 'Medical tab filters are independent');
+      await page.getByRole('tab', { name: '体检', exact: true }).click();
+      assert.equal(await page.getByLabel('健康记录日期', { exact: true }).inputValue(), '2020-01-10');
+    }
+    await page.setViewportSize({ width: 320, height: 740 });
+    assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
+    await page.screenshot({ path: `artifacts/health-date-query-${kind}.png`, fullPage: true });
+    await page.getByRole('button', { name: '清除日期筛选', exact: true }).click();
+    assert.equal(await dashboard.locator('.health-record').count(), unfiltered);
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.getByRole('button', { name: '返回健康首页', exact: true }).click();
+  }
+  await page.screenshot({ path: 'artifacts/health-home-no-date.png', fullPage: true });
   const minor = await api('/register', { username: 'health-minor', password: 'HealthUiTest123!', name: '未成年测试', birthday: '2015-01-01', invite: 'health-ui' });
   const minorPage = await browser.newPage({ viewport: { width: 320, height: 700 } });
   await minorPage.addInitScript(({ base, token }) => {
@@ -303,14 +485,14 @@ try {
   assert.equal(await minorPage.getByLabel('自设目标体重（kg，可不填）', { exact: true }).count(), 0);
   assert.equal(await minorPage.getByLabel('自设每日饮食热量（千卡，可不填）', { exact: true }).count(), 0);
   await minorPage.getByRole('button', { name: '取消', exact: true }).click();
-  await minorPage.getByRole('button', { name: '打开生理期', exact: true }).click();
+  await minorPage.getByRole('button', { name: '打开生理周期', exact: true }).click();
   await minorPage.getByLabel('性别', { exact: true }).selectOption('male');
   await minorPage.getByRole('button', { name: '保存', exact: true }).click();
   await minorPage.getByRole('dialog').waitFor({ state: 'detached' });
-  assert.equal(await minorPage.locator('.health-dashboard').getByRole('button', { name: '打开生理期', exact: true }).count(), 0);
+  assert.equal(await minorPage.locator('.health-dashboard').getByRole('button', { name: '打开生理周期', exact: true }).count(), 0);
   await minorPage.close();
   assert.deepEqual(errors, []);
-  console.log('PASS: real isolated health API, food search/manual/AI review, consent/error retry, water/exercise, legacy weight, gender gate/period end, persistence, edit/delete, mobile/desktop. AI provider mocked, not a real recognition-quality test.');
+  console.log('PASS: isolated health API, food and medical photo consent/error/review/save/cancel, three medical tabs, vision notation/edit/delete, preference persistence and responsive layouts. AI provider mocked, not a real recognition-quality test.');
 } catch (error) {
   await page?.screenshot({ path: 'artifacts/health-failure.png', fullPage: true });
   throw error;

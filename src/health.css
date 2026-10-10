@@ -1,7 +1,14 @@
 .health-dashboard{max-width:960px;margin:0 auto;padding:24px 28px 110px;color:#253b39;letter-spacing:0;background:#f3f5f8}
+.health-sync-entry{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;padding:12px 0;border:0;border-bottom:1px solid #dce7e3;background:none;color:#253b39;text-align:left;font-size:14px}
+.health-sync-source{display:flex;align-items:center;gap:10px;padding:14px 0;border-bottom:1px solid #dce7e3}.health-sync-source>svg{flex-shrink:0;color:#498b84}.health-sync-source>div{display:grid;gap:5px;flex:1;min-width:0}.health-sync-source strong{font-size:14px;overflow-wrap:anywhere}.health-sync-source small,.health-sync-source>span{font-size:12px;color:#687b78}.health-sync-source>span{flex-shrink:0}.health-sync .health-section>button{margin-top:14px}
+.health-sync-options{display:flex;flex-wrap:wrap;gap:14px 22px;margin:12px 0;padding:14px 0;border:0}.health-sync-options legend{font-size:15px;font-weight:600}.health-sync-options label{display:flex;align-items:center;gap:7px;font-size:14px;margin:0}.health-sync-options input{width:18px;height:18px;accent-color:#17806c}.health-sync-privacy{display:flex;justify-content:space-between;gap:12px;font-size:13px;margin:18px 0}.health-sync-privacy strong{color:#687b78;font-weight:400}.health-sync button{max-width:100%}
 .health-fixed-header{position:sticky;top:0;z-index:12;background:#f3f5f8;margin:-24px -28px 12px;padding:24px 28px 0}.health-fixed-header>.health-tabs{margin-bottom:0}
 .health-subpage-heading{display:flex;align-items:center;gap:8px;padding:4px 0 12px;border-bottom:1px solid #dce7e3}.health-subpage-heading h1{font-size:17px;margin:0}.health-fixed-header{padding-bottom:1px}
 .health-home .health-day{padding:2px 0}
+.health-tabs.health-medical-tabs{margin:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:0}.health-medical-tabs>button{min-height:44px}.health-tile.medical .health-tile-art{color:#f8e5e9}
+.health-fields[hidden]{display:none}.health-medical-entry-mode{margin-bottom:12px}
+.health-medical-entry-right{display:flex;justify-content:flex-end}
+.health-date-query .health-day{gap:6px}.health-date-query .health-day>.icon-button{flex-shrink:0}.health-date-query .health-day>label{min-width:0;flex:0 1 175px}.health-query-label{text-align:center;font-size:12px;color:#687b78;margin:0 0 8px}
 .health-home .health-weight-band{padding:12px 20px;margin:8px 0 12px}
 .health-home .health-weight-band .health-section-heading{margin-bottom:4px}
 .health-home .health-weight-band progress{margin:6px 0}

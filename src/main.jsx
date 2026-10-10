@@ -8,7 +8,7 @@ import {
   Settings2, ShieldCheck, Sparkles, Trash2, Wallet, X, RotateCcw, Camera, UserRound, Minus, PanelsTopLeft, GraduationCap,
 } from 'lucide-react';
 import { getBase, getToken, isNative, request, syncReminders } from './api';
-import { AssistantEdge, DesktopAssistantLifecycle, NativeAssistant, overlaySession } from './floating-assistant';
+import { AssistantEdge, AssistantMainActions, DesktopAssistantLifecycle, NativeAssistant, overlaySession } from './floating-assistant';
 import { useAssistantPanelMotion } from './assistant-panel-motion';
 import { VoiceCall } from './voice';
 import { mergeMessages } from './timeline';
@@ -538,6 +538,13 @@ function App() {
   }
   const LockBoundary = overlaySession ? React.Fragment : AppLockProvider;
   return <LockBoundary {...(overlaySession ? {} : { key: state.user.id, user: state.user, onLogout: logout, onLock: () => { setAssistantOpen(false); setModal(null); } })}>
+    {!overlaySession && <AssistantMainActions userId={state.user.id} onAction={action => {
+      setAssistantOpen(false);
+      if (NAVIGATION.some(([id]) => id === action)) {
+        setModal(null);
+        setPage(action);
+      } else setModal({ type: action === 'add' ? 'assistant-menu' : 'receipt' });
+    }} />}
     {!overlaySession && <HabitReminders userId={state.user.id} records={state.records} onNotify={notify} />}
     <DesktopAssistantLifecycle userId={state.user.id} suspended={Boolean(callStatus)} onRunningChange={running => { setDesktopEnabled(running); setEdgeVisible(!running); }} />
     <PreferencesProvider userId={state.user.id}><div className={`app-shell page-${page}${overlaySession ? ` native-assistant-host${nativeExpanded ? '' : ' is-collapsed'}` : ''}`}>
@@ -572,7 +579,7 @@ function App() {
         </div>
         {pending.length > 0 && <button className="pending-chat" onClick={() => setModal({ type: 'pending' })}><ShieldCheck size={17} /><span>{pending.length} 条记录等你核对</span><ChevronRight size={17} /></button>}
         {callStatus && <div className="assistant-call-controls" aria-label="通话控制"><span>{({ connecting: '正在连接', listening: muted ? '已静音' : '正在聆听', thinking: '正在思考', speaking: '正在说话' })[callStatus]}</span><time>{Math.floor(callSeconds / 60).toString().padStart(2, '0')}:{(callSeconds % 60).toString().padStart(2, '0')}</time><IconButton icon={muted ? MicOff : Mic} label={muted ? '取消静音' : '静音'} className={microphoneActive ? 'mic-active' : ''} aria-pressed={muted} data-microphone-state={muted ? 'muted' : microphoneActive ? 'active' : 'unavailable'} disabled={callStatus === 'connecting'} onClick={() => setMuted(call.current?.toggleMute())} /><IconButton icon={PhoneOff} label="结束通话" className="hangup" onClick={endCall} /></div>}
-        <form className="composer" onSubmit={send}><IconButton icon={Plus} label="添加记录" onClick={() => setModal({ type: 'record-kind' })} type="button" />{!overlaySession && <IconButton icon={Camera} label="拍照识别小票" onClick={() => setModal({ type: 'receipt' })} type="button" />}<textarea aria-label="发送给助手的消息" value={text} onChange={e => setText(e.target.value)} placeholder={`和${persona.name}说点什么…`} maxLength={4000} rows={1} onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) { e.preventDefault(); send(); } }} /><IconButton icon={sending ? LoaderCircle : Send} label="发送消息" className={`send-button ${sending ? 'spin-icon' : ''}`} type="submit" disabled={!text.trim() || sending} /></form>
+        <form className="composer" onSubmit={send}><IconButton icon={Plus} label="添加记录" onClick={() => setModal({ type: 'assistant-menu' })} type="button" />{!overlaySession && <IconButton icon={Camera} label="拍照识别小票" onClick={() => setModal({ type: 'receipt' })} type="button" />}<textarea aria-label="发送给助手的消息" value={text} onChange={e => setText(e.target.value)} placeholder={`和${persona.name}说点什么…`} maxLength={4000} rows={1} onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) { e.preventDefault(); send(); } }} /><IconButton icon={sending ? LoaderCircle : Send} label="发送消息" className={`send-button ${sending ? 'spin-icon' : ''}`} type="submit" disabled={!text.trim() || sending} /></form>
       </section>}
       {!overlaySession && page === 'tasks' && <Planner key={state.user.id} userId={state.user.id} widgetView={widgetView} openCourse={plannerCourseCreate} records={state.records} Modal={Modal} pending={<PendingSection scope="tasks" />} createSignal={plannerCreateSignal} onNotify={notify}
         onCreateTask={defaults => setModal({ type: 'record', kind: 'task', defaults })} onEditTask={record => setModal({ type: 'record', record })} onComplete={complete}
@@ -646,6 +653,12 @@ function App() {
     }} />}
     {(modal?.type === 'receipt' || (modal?.type === 'record' && modal.record?.payload.receipt)) && <ReceiptModal Modal={Modal} initial={modal.record} onSave={saveRecord} onClose={() => setModal(null)} />}
     {modal?.type === 'pending' && <Modal title="待确认记录" onClose={() => setModal(null)}><PendingSection scope="chat" /></Modal>}
+    {modal?.type === 'assistant-menu' && <AddMenu Modal={Modal} title="添加" onClose={() => setModal(null)}
+      options={NAVIGATION.map(([id, icon, label]) => ({ label, icon, onSelect: () => {
+        setModal(null);
+        if (overlaySession) window.ZaizaiAssistant.openMain(id);
+        else setPage(id);
+      } }))} />}
     {modal?.type === 'record-kind' && <AddMenu Modal={Modal} title={{ ledger: '添加记账', health: '添加健康记录' }[modal.scope] || '添加'} onClose={() => setModal(null)}
       options={[
         ...[['expense', Wallet, '记一笔'], ['task', ListChecks, '添加待办'], ['weight', Scale, '记录体重']]

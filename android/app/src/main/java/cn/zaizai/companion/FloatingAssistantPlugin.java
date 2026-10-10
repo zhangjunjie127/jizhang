@@ -60,4 +60,13 @@ public class FloatingAssistantPlugin extends Plugin {
         getActivity().runOnUiThread(() -> { AssistantOverlayService.dismiss(getContext()); call.resolve(); });
     }
     @Override protected void handleOnResume() { notifyListeners("foreground", new JSObject()); }
+    @Override protected void handleOnNewIntent(Intent intent) { notifyListeners("foreground", new JSObject()); }
+    @PluginMethod
+    public void consumeMainAction(PluginCall call) {
+        getActivity().runOnUiThread(() -> {
+            AssistantOverlayService service = AssistantOverlayService.instance;
+            String action = service == null ? "" : service.consumeMainAction(call.getString("userId", ""), call.getString("base", ""));
+            call.resolve(new JSObject().put("action", action));
+        });
+    }
 }

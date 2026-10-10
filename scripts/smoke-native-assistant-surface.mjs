@@ -36,6 +36,7 @@ try {
         window.dispatchEvent(new CustomEvent('assistant-visibility', { detail: 'open' }));
       },
       stop() { window.nativeActions.push('stop'); },
+      openMain(action) { window.nativeActions.push(['openMain', action]); },
       setCallActive(active) { window.nativeActions.push(['active', active]); },
       prepareCall() {
         window.nativeActions.push('prepare');
@@ -51,6 +52,15 @@ try {
   assert.equal(await page.locator('.mobile-nav').isVisible(), false);
   const surface = await page.getByRole('dialog', { name: '助手对话' }).boundingBox();
   assert.deepEqual(surface, { x: 0, y: 0, width: 320, height: 480 });
+  for (const [id, label] of [['ledger', '记账'], ['tasks', '待办'], ['health', '健康'], ['mine', '我的']]) {
+    await page.getByRole('button', { name: '添加记录', exact: true }).click();
+    const menu = page.getByRole('dialog', { name: '添加', exact: true });
+    assert.deepEqual(await menu.locator('.add-menu-options button').allTextContents(), ['记账', '待办', '健康', '我的']);
+    await menu.getByRole('button', { name: label, exact: true }).click();
+    assert.ok(await page.evaluate(id => window.nativeActions.some(action => action[0] === 'openMain' && action[1] === id), id),
+      'Overlay entry must open the selected main-app page');
+    assert.equal(await page.locator('.modal').count(), 0);
+  }
   await page.evaluate(() => { window.originalPanel = document.querySelector('.assistant-panel'); });
   await page.getByRole('button', { name: '收起助手', exact: true }).click();
   assert.ok(await page.evaluate(() => window.nativeActions.includes('collapse')));

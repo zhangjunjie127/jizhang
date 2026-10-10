@@ -34,3 +34,23 @@
 - 安卓 APK 已编译；当前没有连接安卓设备，系统窗口和后台录音尚未完成真机验收。
 
 真机还须验收：首次授权及拒绝、跨应用收起/展开、键盘遮挡、锁屏和应用锁、旋转、通知挂断、退出账号、撤销悬浮权限、断网和系统结束进程。不同系统的前台服务与后台限制可能不同。
+# Android Add And Images
+
+- Composer Add offers Ledger, Tasks, Health and Mine navigation entries.
+  Selecting an overlay entry opens MainActivity, collapses the panel without
+  ending a call, and queues only an allowlisted page (no token in the Intent).
+  In-app entries navigate directly; module-level create menus are unchanged.
+- The main app consumes that action for the matching account and backend.
+  The consumer mounts inside the app-lock boundary, so cold starts and locked
+  returns navigate only after authentication/unlock. Legacy add actions open
+  the same four-entry menu.
+- The service WebView handles image file inputs through the non-exported
+  AssistantImageActivity. Capture uses a temporary FileProvider URI; album
+  selection uses the system document picker restricted to images.
+- Cancel/failure releases the WebView callback. Request IDs reject stale
+  results; document results reject non-content URIs and this app's private
+  FileProvider. Existing conversations and calls are not recreated.
+- Verification: compileDebugJavaWithJavac, smoke-native-assistant-surface,
+  smoke-assistant-lifecycle (mock bridge). Camera UI, OEM background-launch
+  restrictions and activity recreation still require testing the next APK on
+  a phone. No APK is built as part of this change.
