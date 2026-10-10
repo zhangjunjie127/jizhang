@@ -8,7 +8,7 @@ import {
   Settings2, ShieldCheck, Sparkles, Trash2, Wallet, X, RotateCcw, Camera, UserRound, Minus, PanelsTopLeft, GraduationCap,
 } from 'lucide-react';
 import { getBase, getToken, isNative, request, syncReminders } from './api';
-import { AssistantEdge, AssistantMainActions, DesktopAssistantLifecycle, NativeAssistant, overlaySession } from './floating-assistant';
+import { AssistantBackdrop, AssistantEdge, AssistantMainActions, DesktopAssistantLifecycle, NativeAssistant, overlaySession } from './floating-assistant';
 import { useAssistantPanelMotion } from './assistant-panel-motion';
 import { VoiceCall } from './voice';
 import { mergeMessages } from './timeline';
@@ -27,6 +27,7 @@ import { DebtManager } from './debts';
 import { DebtRepaymentReview } from './debt-repayment-review';
 import { MinePage } from './mine-page';
 import { HealthPage } from './health';
+import { createHealthDashboardCache } from './health-dashboard-cache.mjs';
 import { SystemMessages } from './system-messages.jsx';
 import { AccountService } from './account-services';
 import { AccountSettings } from './account-settings';
@@ -211,6 +212,20 @@ function RecordForm({ initial, kind: initialKind, onClose, onSave, onDebt, defau
 
 function App() {
   const [state, setState] = useState(null);
+  const [healthCache] = useState(() => createHealthDashboardCache(async () => {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 15000);
+    try { return await request('/health/dashboard', { signal: controller.signal }); }
+    catch (error) {
+      if (controller.signal.aborted) throw new Error('健康记录加载超时，请检查网络后重试');
+      throw error;
+    } finally { clearTimeout(timer); }
+  }));
+  const healthKey = state ? JSON.stringify([state.user.id, state.user.gender, state.user.adult, getBase(), getToken()]) : '';
+  useEffect(() => {
+    if (!healthKey) { healthCache.clear(); return; }
+    if (!overlaySession) healthCache.load(healthKey).catch(() => {});
+  }, [healthKey, healthCache]);
   const [booting, setBooting] = useState(Boolean(getToken()));
   const [bootError, setBootError] = useState('');
   const [page, updatePage] = useState(() => initialPage());
@@ -501,6 +516,7 @@ function App() {
     endCall();
     await request('/logout', { method: 'POST' }).catch(() => {});
     localStorage.removeItem('zaizai-token');
+    healthCache.clear();
     if (isNative) await syncReminders([]).catch(() => {});
     setAssistantOpen(false); setEdgeVisible(true);
     setModal(null); setState(null); setPage('ledger');
@@ -548,6 +564,7 @@ function App() {
     {!overlaySession && <HabitReminders userId={state.user.id} records={state.records} onNotify={notify} />}
     <DesktopAssistantLifecycle userId={state.user.id} suspended={Boolean(callStatus)} onRunningChange={running => { setDesktopEnabled(running); setEdgeVisible(!running); }} />
     <PreferencesProvider userId={state.user.id}><div className={`app-shell page-${page}${overlaySession ? ` native-assistant-host${nativeExpanded ? '' : ' is-collapsed'}` : ''}`}>
+    <AssistantBackdrop key={state.user.id} open={assistantOpen} userId={state.user.id} />
     <aside className="sidebar">
       <div className="brand"><img src="/app-icon.png" alt="" /><span>在在</span><small>内测</small></div>
       <nav aria-label="主要功能">{NAVIGATION.map(([id, Icon, label]) => <button key={id} aria-label={label} aria-current={page === id ? 'page' : undefined} className={page === id ? 'active' : ''} onClick={() => setPage(id)}><Icon size={20} /><span>{label}</span>{badgeCount(id) > 0 && <i aria-label={`${badgeCount(id)} 条待查看`}>{badgeCount(id)}</i>}</button>)}</nav>
@@ -579,12 +596,12 @@ function App() {
         </div>
         {pending.length > 0 && <button className="pending-chat" onClick={() => setModal({ type: 'pending' })}><ShieldCheck size={17} /><span>{pending.length} 条记录等你核对</span><ChevronRight size={17} /></button>}
         {callStatus && <div className="assistant-call-controls" aria-label="通话控制"><span>{({ connecting: '正在连接', listening: muted ? '已静音' : '正在聆听', thinking: '正在思考', speaking: '正在说话' })[callStatus]}</span><time>{Math.floor(callSeconds / 60).toString().padStart(2, '0')}:{(callSeconds % 60).toString().padStart(2, '0')}</time><IconButton icon={muted ? MicOff : Mic} label={muted ? '取消静音' : '静音'} className={microphoneActive ? 'mic-active' : ''} aria-pressed={muted} data-microphone-state={muted ? 'muted' : microphoneActive ? 'active' : 'unavailable'} disabled={callStatus === 'connecting'} onClick={() => setMuted(call.current?.toggleMute())} /><IconButton icon={PhoneOff} label="结束通话" className="hangup" onClick={endCall} /></div>}
-        <form className="composer" onSubmit={send}><IconButton icon={Plus} label="添加记录" onClick={() => setModal({ type: 'assistant-menu' })} type="button" />{!overlaySession && <IconButton icon={Camera} label="拍照识别小票" onClick={() => setModal({ type: 'receipt' })} type="button" />}<textarea aria-label="发送给助手的消息" value={text} onChange={e => setText(e.target.value)} placeholder={`和${persona.name}说点什么…`} maxLength={4000} rows={1} onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) { e.preventDefault(); send(); } }} /><IconButton icon={sending ? LoaderCircle : Send} label="发送消息" className={`send-button ${sending ? 'spin-icon' : ''}`} type="submit" disabled={!text.trim() || sending} /></form>
+        <form className="composer" onSubmit={send}><IconButton icon={Plus} label="添加记录" onClick={() => setModal({ type: 'assistant-menu' })} type="button" /><IconButton icon={Camera} label="拍照识别小票" onClick={() => setModal({ type: 'receipt' })} type="button" /><textarea aria-label="发送给助手的消息" value={text} onChange={e => setText(e.target.value)} placeholder={`和${persona.name}说点什么…`} maxLength={4000} rows={1} onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) { e.preventDefault(); send(); } }} /><IconButton icon={sending ? LoaderCircle : Send} label="发送消息" className={`send-button ${sending ? 'spin-icon' : ''}`} type="submit" disabled={!text.trim() || sending} /></form>
       </section>}
       {!overlaySession && page === 'tasks' && <Planner key={state.user.id} userId={state.user.id} widgetView={widgetView} openCourse={plannerCourseCreate} records={state.records} Modal={Modal} pending={<PendingSection scope="tasks" />} createSignal={plannerCreateSignal} onNotify={notify}
         onCreateTask={defaults => setModal({ type: 'record', kind: 'task', defaults })} onEditTask={record => setModal({ type: 'record', record })} onComplete={complete}
         onDeleteTask={record => action(`/records/${record.id}`, { method: 'DELETE' }, '已移入回收站，可恢复')} />}
-      {!overlaySession && page === 'health' && <HealthPage key={state.user.id} user={state.user} records={state.records} Modal={Modal} pending={<PendingSection scope="health" />}
+      {!overlaySession && page === 'health' && <HealthPage key={state.user.id} cache={healthCache} cacheKey={healthKey} user={state.user} records={state.records} Modal={Modal} pending={<PendingSection scope="health" />}
         createSignal={healthCreateSignal} WeightChart={WeightChart}
         onProfile={async gender => {
           const result = await request('/account/profile', { method: 'PATCH', body: { gender } });

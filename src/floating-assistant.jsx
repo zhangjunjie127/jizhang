@@ -13,6 +13,31 @@ import { AssistantFrames } from './assistant-frames';
 export const NativeAssistant = registerPlugin('FloatingAssistant');
 export const overlaySession = window.__ZAIZAI_OVERLAY__ || null;
 
+export function AssistantBackdrop({ open, userId }) {
+  const [expanded, setExpanded] = useState(false);
+  useEffect(() => {
+    if (!isNative || overlaySession) return;
+    let active = true, revision = 0;
+    const handles = [];
+    const sync = async () => {
+      const current = ++revision;
+      try {
+        const state = await NativeAssistant.status({ userId });
+        if (active && current === revision) setExpanded(Boolean(state.running && state.expanded));
+      } catch { if (active && current === revision) setExpanded(false); }
+    };
+    for (const name of ['presentation', 'foreground']) {
+      NativeAssistant.addListener(name, sync).then(handle => {
+        if (active) { handles.push(handle); sync(); } else handle.remove();
+      }).catch(() => {});
+    }
+    sync();
+    return () => { active = false; handles.forEach(handle => handle.remove()); };
+  }, [userId]);
+  if (overlaySession || (!open && !expanded)) return null;
+  return <div className="assistant-backdrop" aria-hidden="true" />;
+}
+
 // Mount inside the app-lock boundary so pending actions wait for unlock.
 export function AssistantMainActions({ userId, onAction }) {
   const callback = useRef(onAction);

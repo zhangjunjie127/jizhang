@@ -77,6 +77,15 @@ try {
   };
   await go();
   const dashboard = page.locator('.health-dashboard');
+  let repeatLoads = 0;
+  const countDashboard = req => { if (req.url().endsWith('/api/health/dashboard')) repeatLoads++; };
+  page.on('request', countDashboard);
+  await page.locator('.mobile-nav').getByRole('button', { name: '记账', exact: true }).click();
+  await page.locator('.mobile-nav').getByRole('button', { name: '健康', exact: true }).click();
+  assert.equal(await dashboard.getByText('正在加载健康记录', { exact: true }).count(), 0, 'Revisiting health renders cached records immediately');
+  assert.equal(await dashboard.getByRole('button', { name: '添加早餐', exact: true }).isVisible(), true);
+  assert.equal(repeatLoads, 0, 'Fresh health data is reused without another network round trip');
+  page.off('request', countDashboard);
   assert.equal(await dashboard.getByLabel('健康记录日期', { exact: true }).count(), 0, 'Home has no date filter');
   await dashboard.getByRole('button', { name: '设备与数据同步', exact: true }).click();
   await page.getByRole('checkbox', { name: '步数', exact: true }).waitFor();

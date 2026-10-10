@@ -16,7 +16,8 @@ try {
   const edge = page.locator('.assistant-edge');
   await edge.waitFor();
   const panel = page.locator('.assistant-panel');
-  const settle = () => page.waitForFunction(() => document.querySelector('.assistant-panel')?.getAnimations().length === 0);
+  const settle = () => page.waitForFunction(() =>
+    [...document.querySelectorAll('.assistant-panel,.assistant-backdrop')].every(el => el.getAnimations().length === 0));
   for (const [dock, x, y] of [
     ['left', 10, 350], ['right', 380, 350], ['left', 10, 730], ['right', 380, 730],
     ['bottom', 195, 830], ['center', 195, 400],
@@ -55,6 +56,14 @@ try {
     await settle();
     assert.equal(await panel.evaluate(el => getComputedStyle(el).borderTopLeftRadius), '8px');
     assert.equal(await panel.evaluate(el => getComputedStyle(el).clipPath), 'none', 'No residual clipping after opening');
+    assert.equal(await panel.locator('.messages').evaluate(el => getComputedStyle(el).backgroundColor), 'rgb(220, 231, 239)',
+      'Assistant conversation has a distinct background from the white main pages');
+    assert.notEqual(await panel.evaluate(el => getComputedStyle(el).boxShadow), 'none',
+      'Expanded panel casts an outer shadow');
+    const frost = page.locator('.assistant-backdrop');
+    assert.equal(await frost.evaluate(el => getComputedStyle(el).backdropFilter), 'blur(12px)');
+    assert.deepEqual(await frost.boundingBox(), { x: 0, y: 0, width: 390, height: 844 });
+    assert.equal(await panel.evaluate(el => getComputedStyle(el).filter), 'none', 'Only background is blurred');
     await page.getByRole('button', { name: '收起助手', exact: true }).evaluate(el => el.click());
     await panel.evaluate(el => {
       const animation = el.getAnimations()[0];
@@ -101,6 +110,7 @@ try {
     assert.ok(Math.abs(interruption.before[key] - interruption.after[key]) < 1, `No jump when reversing: ${key}`);
   }
   await panel.waitFor({ state: 'detached' });
+  assert.equal(await page.locator('.assistant-backdrop').count(), 0, 'Minimizing restores the main page');
   await edge.waitFor();
   await edge.evaluate(el => el.click());
   await panel.waitFor({ state: 'attached' });

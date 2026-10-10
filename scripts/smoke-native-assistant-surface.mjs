@@ -52,6 +52,25 @@ try {
   assert.equal(await page.locator('.mobile-nav').isVisible(), false);
   const surface = await page.getByRole('dialog', { name: '助手对话' }).boundingBox();
   assert.deepEqual(surface, { x: 0, y: 0, width: 320, height: 480 });
+  assert.equal(await page.locator('.assistant-backdrop').count(), 0, 'Native conversation itself stays clear; frost belongs to the main app');
+  const input = page.getByRole('textbox', { name: '发送给助手的消息', exact: true });
+  await input.fill('键盘避让测试');
+  await page.setViewportSize({ width: 320, height: 240 });
+  const composer = await page.locator('.composer').boundingBox();
+  assert.ok(composer.y >= 0 && composer.y + composer.height <= 240, 'Composer fits the reduced WebView above the keyboard');
+  assert.equal(await input.inputValue(), '键盘避让测试', 'Resizing keeps the input draft');
+  await page.setViewportSize({ width: 320, height: 480 });
+  await input.fill('');
+  await page.getByRole('button', { name: '拍照识别小票', exact: true }).click();
+  const receipt = page.getByRole('dialog', { name: '小票识别', exact: true });
+  await receipt.waitFor();
+  const capture = page.waitForEvent('filechooser');
+  await receipt.getByRole('button', { name: '拍照', exact: true }).click();
+  assert.equal(await (await capture).element().getAttribute('capture'), 'environment');
+  const album = page.waitForEvent('filechooser');
+  await receipt.getByRole('button', { name: '从相册选择', exact: true }).click();
+  assert.equal(await (await album).element().getAttribute('capture'), null);
+  await receipt.getByRole('button', { name: '关闭', exact: true }).click();
   for (const [id, label] of [['ledger', '记账'], ['tasks', '待办'], ['health', '健康'], ['mine', '我的']]) {
     await page.getByRole('button', { name: '添加记录', exact: true }).click();
     const menu = page.getByRole('dialog', { name: '添加', exact: true });

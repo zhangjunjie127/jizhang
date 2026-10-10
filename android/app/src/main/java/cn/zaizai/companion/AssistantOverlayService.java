@@ -47,6 +47,9 @@ public class AssistantOverlayService extends Service {
     private boolean dockLeft;
     private int edgeY;
     private int unread;
+    private int panelX, panelY, panelWidth, panelHeight, keyboardBottom;
+    private final android.graphics.Rect visibleFrame = new android.graphics.Rect();
+    private final int[] rootLocation = new int[2];
     private BroadcastReceiver screenReceiver;
     private Runnable voiceTimeout;
     private String pendingMainAction;
@@ -73,6 +76,9 @@ public class AssistantOverlayService extends Service {
         return user.equals(context.getSharedPreferences("assistant_overlay", MODE_PRIVATE).getString("dismissed_user", ""));
     }
     boolean belongsTo(String user) { return user.equals(userId); }
+    boolean isExpandedFor(String user) {
+        return belongsTo(user) && expanded && root != null && root.getVisibility() == View.VISIBLE && fileCallback == null;
+    }
     private void closeByUser() {
         if (userId != null) getSharedPreferences("assistant_overlay", MODE_PRIVATE).edit().putString("dismissed_user", userId).apply();
         stopSelf();
@@ -165,14 +171,27 @@ public class AssistantOverlayService extends Service {
     }
     private void createWindow() throws Exception {
         root = new FrameLayout(this) {
+            private final android.graphics.Paint shadow = new android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG);
             @Override protected void dispatchDraw(android.graphics.Canvas canvas) {
                 int saved = canvas.save();
+                canvas.translate(content.getLeft(), content.getTop());
                 if (panelMotion != null) {
-                    canvas.translate(content.getLeft(), content.getTop());
                     canvas.concat(cornerMatrix);
-                    canvas.clipPath(panelClip);
-                    canvas.translate(-content.getLeft(), -content.getTop());
                 }
+                if (expanded) {
+                    // Draw inside the transparent window gutter, outside the panel's clip.
+                    shadow.setColor(Color.argb(Math.round(4 * content.getAlpha()), 21, 45, 73));
+                    for (int spread = 20; spread >= 1; spread--) {
+                        float inset = dp(spread);
+                        canvas.drawRoundRect(-inset, -inset + dp(3),
+                            content.getWidth() + inset, content.getHeight() + inset + dp(3),
+                            dp(8) + inset, dp(8) + inset, shadow);
+                    }
+                }
+                if (panelMotion != null) {
+                    canvas.clipPath(panelClip);
+                }
+                canvas.translate(-content.getLeft(), -content.getTop());
                 super.dispatchDraw(canvas);
                 canvas.restoreToCount(saved);
             }
@@ -244,6 +263,7 @@ public class AssistantOverlayService extends Service {
                         .putExtra("multiple", options.getMode() == FileChooserParams.MODE_OPEN_MULTIPLE));
                     root.setVisibility(View.INVISIBLE);
                     catRoot.setVisibility(View.INVISIBLE);
+                    FloatingAssistantPlugin.presentationChanged();
                 } catch (Exception error) {
                     finishFileRequest(fileRequestId, null);
                     Toast.makeText(AssistantOverlayService.this, "无法打开拍照或相册，请重试", Toast.LENGTH_LONG).show();
@@ -283,6 +303,7 @@ public class AssistantOverlayService extends Service {
         params.softInputMode = WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE;
         edgeY = Math.max(dp(24), screenHeight() - dp(230));
         manager.addView(root, params);
+        root.getViewTreeObserver().addOnGlobalLayoutListener(this::avoidKeyboard);
         createCatWindow();
         drag(edge, true); drag(grip, false);
         web.loadUrl(ORIGIN + "/index.html");
@@ -361,7 +382,7 @@ public class AssistantOverlayService extends Service {
                     case MotionEvent.ACTION_MOVE:
                         float dx = event.getRawX() - x, dy = event.getRawY() - y;
                         if (Math.hypot(dx, dy) > dp(5)) moved = true;
-                        if (moved && !(handle && expanded)) {
+                        if (moved) {
                             target.x = Math.max(0, Math.min(screenWidth() - target.width, startX + (int) dx));
                             target.y = Math.max(dp(24), Math.min(screenHeight() - target.height - dp(32), startY + (int) dy));
                             manager.updateViewLayout(handle ? catRoot : root, target);
@@ -369,17 +390,54 @@ public class AssistantOverlayService extends Service {
                         return true;
                     case MotionEvent.ACTION_UP:
                         tracking = false;
-                        if (handle && moved && !expanded) { dockLeft = catParams.x < screenWidth() / 2; edgeY = catParams.y; layout(false); }
+                        if (handle && moved) dockCat();
+                        else if (!handle && moved) {
+                            FrameLayout.LayoutParams bounds = (FrameLayout.LayoutParams) content.getLayoutParams();
+                            panelX = params.x + bounds.leftMargin;
+                            panelY = params.y + bounds.topMargin;
+                            fitPanel();
+                        }
                         else if (!moved) v.performClick();
                         return true;
                     case MotionEvent.ACTION_CANCEL:
                         tracking = false;
-                        if (handle && !expanded) layout(false);
+                        if (handle && moved) dockCat();
                         return true;
                     default: return false;
                 }
             }
         });
+    }
+    private void dockCat() {
+        dockLeft = catParams.x < screenWidth() / 2;
+        edgeY = catParams.y;
+        catParams.x = dockLeft ? 0 : screenWidth() - catParams.width;
+        manager.updateViewLayout(catRoot, catParams);
+        if (!expanded) layout(false);
+        else syncCat();
+    }
+    private void avoidKeyboard() {
+        if (!expanded || root == null || panelMotion != null || fileCallback != null) return;
+        root.getWindowVisibleDisplayFrame(visibleFrame);
+        root.getLocationOnScreen(rootLocation);
+        // Convert the display frame to the same origin as WindowManager.LayoutParams.
+        int visibleBottom = visibleFrame.bottom - (rootLocation[1] - params.y);
+        if (visibleBottom <= dp(24)) return;
+        int next = screenHeight() - visibleBottom > dp(100) ? visibleBottom - dp(8) : 0;
+        if (keyboardBottom == next) return;
+        keyboardBottom = next;
+        fitPanel();
+    }
+    private void fitPanel() {
+        if (!expanded || panelMotion != null) return;
+        int bottom = keyboardBottom > 0 ? keyboardBottom : screenHeight() - dp(40);
+        int[] b = AssistantPanelLayout.fit(panelX, panelY, panelWidth, panelHeight,
+            screenWidth(), bottom, dp(24), dp(24));
+        params.x = b[0]; params.y = b[1]; params.width = b[2]; params.height = b[3];
+        FrameLayout.LayoutParams bounds = new FrameLayout.LayoutParams(b[6], b[7]);
+        bounds.leftMargin = b[4]; bounds.topMargin = b[5];
+        content.setLayoutParams(bounds);
+        manager.updateViewLayout(root, params);
     }
     private void openFromEdge() {
         KeyguardManager keyguard = getSystemService(KeyguardManager.class);
@@ -412,8 +470,10 @@ public class AssistantOverlayService extends Service {
         if (open) layout(true);
         else ((android.view.inputmethod.InputMethodManager) getSystemService(INPUT_METHOD_SERVICE))
             .hideSoftInputFromWindow(web.getWindowToken(), 0);
-        final int panelX = params.x, panelY = params.y, width = params.width, height = params.height;
-        int padding = dp(8);
+        FrameLayout.LayoutParams panelBounds = (FrameLayout.LayoutParams) content.getLayoutParams();
+        final int panelX = params.x + panelBounds.leftMargin, panelY = params.y + panelBounds.topMargin;
+        final int width = panelBounds.width, height = panelBounds.height;
+        int padding = dp(24);
         int unionX = Math.max(0, Math.min(panelX, catX) - padding);
         int unionY = Math.max(0, Math.min(panelY, catY) - padding);
         // The union window prevents clipping while the same live WebView travels to the cat.
@@ -495,8 +555,13 @@ public class AssistantOverlayService extends Service {
         params.height = open ? height : dp(62.4f);
         params.x = open ? (dockLeft ? dp(8) : screenWidth() - width - dp(8)) : dockLeft ? 0 : screenWidth() - params.width;
         params.y = Math.max(dp(24), Math.min(edgeY, screenHeight() - params.height - dp(40)));
+        if (open) {
+            panelX = params.x; panelY = params.y; panelWidth = width; panelHeight = height;
+            fitPanel();
+        }
         if (open) params.flags &= ~WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE;
         else {
+            keyboardBottom = 0;
             params.flags |= WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE;
             ((android.view.inputmethod.InputMethodManager) getSystemService(INPUT_METHOD_SERVICE)).hideSoftInputFromWindow(web.getWindowToken(), 0);
         }
@@ -518,6 +583,7 @@ public class AssistantOverlayService extends Service {
         event("assistant-dock", dockLeft ? "left" : "right");
         event("assistant-visibility", expanded ? "open" : "collapsed");
         syncCat();
+        FloatingAssistantPlugin.presentationChanged();
     }
     private void event(String name, String detail) {
         if (web != null) web.evaluateJavascript("window.dispatchEvent(new CustomEvent(" + JSONObject.quote(name)
@@ -590,6 +656,7 @@ public class AssistantOverlayService extends Service {
     }
     @Override public void onConfigurationChanged(Configuration config) {
         super.onConfigurationChanged(config);
+        keyboardBottom = 0;
         layout(expanded);
     }
     private void destroyWindow() {
@@ -612,6 +679,8 @@ public class AssistantOverlayService extends Service {
             web.destroy(); web = null;
         }
         callActive = false; voicePrepared = false; preparing = false; unread = 0;
+        expanded = false;
+        FloatingAssistantPlugin.presentationChanged();
     }
     @Override public void onDestroy() {
         instance = null;

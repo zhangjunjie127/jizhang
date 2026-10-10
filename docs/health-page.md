@@ -107,6 +107,15 @@ Entries store nutrients for the entire portion, not per 100g.
 
 ## Verification
 
+Dashboard data is prefetched after login and shared with the health page.
+The in-memory cache is scoped to the account, login session, server and profile;
+it is cleared on logout and never stored in browser storage. Returning within
+30 seconds reuses data immediately. Older data remains visible while refreshing,
+focus refreshes it, and successful edits/deletes replace the cache. Requests
+time out after 15 seconds with a retryable error instead of an endless spinner.
+`tests/health-dashboard-cache.test.mjs` covers deduplication, expiry, session
+isolation and preventing older requests from overwriting saved changes.
+
 `node --test tests/health.test.mjs tests/app.test.mjs`
 
 `node scripts/smoke-health.mjs` uses a temporary database and a controlled AI

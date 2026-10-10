@@ -47,6 +47,22 @@
 - The service WebView handles image file inputs through the non-exported
   AssistantImageActivity. Capture uses a temporary FileProvider URI; album
   selection uses the system document picker restricted to images.
+- The overlay composer includes the receipt camera entry, opening the same
+  camera/album picker panel as the main app. The native surface smoke test
+  verifies both file-input paths; camera hardware still needs a device check.
+- The separate cat remains draggable while the conversation is expanded.
+  Releasing it updates only the cat's dock; the panel and input focus stay put,
+  and minimizing uses the cat's new position as its animation destination.
+- Expanded conversations frost the whole main-app background using a shared
+  backdrop below the panel and cat. Native presentation events synchronize
+  the main app with the separate overlay; collapse, stop and photo selection
+  clear it. No desktop/other-app screen capture or system-wide blur is used.
+- Global layout changes fit the panel above the keyboard's visible display
+  boundary, moving up first and reducing height when necessary. Closing the
+  keyboard restores the panel's requested bounds without recreating its WebView.
+  Run `scripts/check-assistant-layout.ps1` for native geometry checks and
+  `scripts/smoke-native-assistant-surface.mjs` for reduced-height input checks.
+  Actual keyboard/OEM overlay interaction still requires an updated APK on a phone.
 - Cancel/failure releases the WebView callback. Request IDs reject stale
   results; document results reject non-content URIs and this app's private
   FileProvider. Existing conversations and calls are not recreated.

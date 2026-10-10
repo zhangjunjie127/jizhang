@@ -77,6 +77,11 @@ try {
   await edge.waitFor({ state: 'hidden' });
   await page.evaluate(() => window.emitNative('FloatingAssistant:foreground'));
   assert.equal(await page.evaluate(() => window.overlayState.created), 1, 'Returning reuses the existing service');
+  await page.evaluate(() => { window.overlayState.expanded = true; window.emitNative('FloatingAssistant:presentation'); });
+  await page.locator('.assistant-backdrop').waitFor();
+  assert.equal(await page.locator('.assistant-panel').count(), 0, 'Native overlay frosts the main app without duplicating the conversation');
+  await page.evaluate(() => { window.overlayState.expanded = false; window.emitNative('FloatingAssistant:presentation'); });
+  await page.locator('.assistant-backdrop').waitFor({ state: 'detached' });
   await page.evaluate(() => { window.pendingMainAction = 'add'; window.emitNative('FloatingAssistant:foreground'); });
   await page.getByRole('dialog', { name: '添加', exact: true }).waitFor();
   assert.equal(await page.evaluate(() => window.pendingMainAction), '');

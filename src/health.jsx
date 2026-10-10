@@ -21,8 +21,13 @@ function Tool({ icon: Icon, label, ...props }) {
   return <button type="button" className="icon-button" title={label} aria-label={label} {...props}><Icon size={19} /></button>;
 }
 
-export function HealthPage({ user, records, Modal, pending, onProfile, onWeight, onEditWeight, onDeleteWeight, WeightChart, createSignal }) {
-  const [data, setData] = useState(null);
+export function HealthPage({ cache, cacheKey, user, records, Modal, pending, onProfile, onWeight, onEditWeight, onDeleteWeight, WeightChart, createSignal }) {
+  const [data, updateData] = useState(() => cache.read(cacheKey));
+  function setData(value) {
+    if (!value) return;
+    cache.write(cacheKey, value);
+    updateData(value);
+  }
   const [error, setError] = useState('');
   const [view, setView] = useState('today');
   const [medicalTab, setMedicalTab] = useState('checkup');
@@ -47,27 +52,24 @@ export function HealthPage({ user, records, Modal, pending, onProfile, onWeight,
   }, [view]);
   async function reload() {
     setError('');
-    try { setData(await request('/health/dashboard')); }
+    try { updateData(await cache.load(cacheKey, true)); }
     catch (e) { setError(e.message); }
   }
   useEffect(() => {
-    const controller = new AbortController();
+    let active = true;
     setError('');
-    request('/health/dashboard', { signal: controller.signal }).then(setData).catch(e => {
-      if (!controller.signal.aborted) setError(e.message);
-    });
+    updateData(cache.read(cacheKey));
+    const sync = () => cache.load(cacheKey, true).then(value => {
+      if (active && value) updateData(value);
+    }).catch(e => { if (active) setError(e.message); });
+    cache.load(cacheKey).then(value => {
+      if (active && value) updateData(value);
+    }).catch(e => { if (active) setError(e.message); });
+    window.addEventListener('focus', sync);
     if (user.gender !== 'female' && view === 'period') setView('today');
     if (user.gender !== 'female') setEditor(current => current?.kind === 'period' ? null : current);
-    return () => controller.abort();
-  }, [user.id, user.gender]);
-  useEffect(() => {
-    const controller = new AbortController();
-    const sync = () => request('/health/dashboard', { signal: controller.signal }).then(setData).catch(e => {
-      if (!controller.signal.aborted) setError(e.message);
-    });
-    window.addEventListener('focus', sync);
-    return () => { controller.abort(); window.removeEventListener('focus', sync); };
-  }, [user.id, user.gender]);
+    return () => { active = false; window.removeEventListener('focus', sync); };
+  }, [cache, cacheKey, user.gender]);
   useEffect(() => {
     if (createSignal === previousSignal.current) return;
     previousSignal.current = createSignal;
@@ -257,7 +259,6 @@ export function HealthPage({ user, records, Modal, pending, onProfile, onWeight,
       onClose={() => setEditor(null)} onSaved={(result, askReminder) => { setData(result); setEditor(null); if (isNative) syncReminders(records, Boolean(askReminder)).catch(e => setError(e.message)); }}
       onGender={async gender => {
         await onProfile(gender);
-        setData(await request('/health/dashboard'));
         setEditor(null);
         setView(gender === 'female' ? 'period' : 'today');
         setGenderNotice(gender === 'female' ? '' : '性别已保存，生理周期入口已隐藏');

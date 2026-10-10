@@ -12,10 +12,22 @@ import com.getcapacitor.annotation.CapacitorPlugin;
 
 @CapacitorPlugin(name = "FloatingAssistant")
 public class FloatingAssistantPlugin extends Plugin {
+    private static FloatingAssistantPlugin active;
+    @Override public void load() { active = this; }
+    @Override protected void handleOnDestroy() {
+        if (active == this) active = null;
+    }
+    static void presentationChanged() {
+        if (active != null) active.notifyListeners("presentation", new JSObject());
+    }
     @PluginMethod
     public void status(PluginCall call) {
-        call.resolve(new JSObject().put("permitted", Build.VERSION.SDK_INT >= 26 && Settings.canDrawOverlays(getContext()))
-            .put("running", AssistantOverlayService.instance != null));
+        getActivity().runOnUiThread(() -> {
+            AssistantOverlayService service = AssistantOverlayService.instance;
+            call.resolve(new JSObject().put("permitted", Build.VERSION.SDK_INT >= 26 && Settings.canDrawOverlays(getContext()))
+                .put("running", service != null)
+                .put("expanded", service != null && service.isExpandedFor(call.getString("userId", ""))));
+        });
     }
 
     @PluginMethod
