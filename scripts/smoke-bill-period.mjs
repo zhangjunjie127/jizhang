@@ -174,7 +174,6 @@ try {
     assert.equal(await page.getByRole('tab', { name: '明细', exact: true }).getAttribute('aria-selected'), 'true');
     assert.equal(await page.getByRole('button', { name: '选择账目日期', exact: true }).getAttribute('title'), `${oldYear}-12 · 整月`);
     assert.equal(await page.locator('.ledger-row').count(), 2);
-    await page.getByRole('button', { name: '收支与分类筛选', exact: true }).click();
     await page.getByLabel('筛选收支').selectOption('income');
     assert.equal(await page.locator('.ledger-row').count(), 1);
     assert.equal(await page.locator('.ledger-amount').textContent(), '+260.00');
@@ -264,7 +263,7 @@ try {
   await page.reload();
   await page.getByRole('tab', { name: '年账单', exact: true }).click();
   await fits();
-  assert.equal(await page.locator('.bill-summary-net .bill-money').textContent(), '-100.00万');
+  assert.equal(await page.locator('.bill-summary-net .bill-money').textContent(), '-1.00百万');
   await page.screenshot({ path: 'artifacts/blue-bill-million-320.png' });
   records = [];
   await page.reload();
@@ -314,7 +313,6 @@ try {
       await page.getByRole('tab', { name: tab, exact: true }).click();
       const list = page.locator(selector);
       await list.waitFor();
-      if (tab === '明细') await page.getByRole('button', { name: '收支与分类筛选' }).click();
       const fixed = page.locator('.ledger-page>.page-heading,.ledger-section-tabs,.ledger-overview,.ledger-query,.debt-direction,.debt-filters,.mobile-nav');
       const bounds = () => fixed.evaluateAll(nodes => nodes.map(node => ({ y: node.getBoundingClientRect().y, height: node.getBoundingClientRect().height })));
       const before = await bounds();

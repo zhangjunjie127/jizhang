@@ -5,6 +5,7 @@ import { EXPENSE_CATEGORIES, INCOME_CATEGORIES, CategoryIcon, categoryTone } fro
 import { requestId as newRequestId } from './navigation';
 import './expense-entry.css';
 import { usePreferences } from './app-preferences';
+import { MAX_LEDGER_AMOUNT } from '../shared/money.mjs';
 
 export function ExpenseEntry({ Modal, initial, onClose, onSave, onDebt }) {
   const original = initial?.payload || {};
@@ -89,7 +90,7 @@ export function ExpenseEntry({ Modal, initial, onClose, onSave, onDebt }) {
             <span className={`entry-category-icon ${categoryTone(category)}`}><CategoryIcon category={category || '其他'} size={25} /></span>
             <span><small>{directionLabel}</small><strong>{category || '其他'}</strong></span><ChevronRight size={20} />
           </button>
-          <label className="entry-amount">金额（元）<input name="amount" type="number" inputMode="decimal" min=".01" max="1000000" step=".01" placeholder="0.00" value={fields.amount} onChange={update} required /></label>
+          <label className="entry-amount">金额（元）<input name="amount" type="number" inputMode="decimal" min=".01" max={MAX_LEDGER_AMOUNT} step=".01" placeholder="0.00" value={fields.amount} onChange={update} required /></label>
           <label>备注<input name="title" placeholder={direction === 'income' ? '这笔收入来自哪里' : '这笔钱花在哪里'} maxLength={160} value={fields.title} onChange={update} /></label>
           <label>记录日期<DateInput name="date" type="date" required value={fields.date} onChange={update} /></label>
           {initial?.status === 'pending' && <div className="confirmation-note"><ShieldCheck size={16} />确认后才会正式保存</div>}

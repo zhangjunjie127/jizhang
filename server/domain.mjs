@@ -1,5 +1,6 @@
 import { randomBytes, scryptSync, timingSafeEqual, createHash } from 'node:crypto';
 import { validateReceipt } from '../shared/receipt.mjs';
+import { MAX_LEDGER_CENTS } from '../shared/money.mjs';
 import { debtAmountCents, debtDate, debtToday } from '../shared/debts.mjs';
 import { TASK_CATEGORIES } from '../shared/task-categories.mjs';
 import { TASK_PRIORITIES, normalizeTaskPriority } from '../shared/task-priorities.mjs';
@@ -111,7 +112,7 @@ export function validateRecord(kind, input) {
   } else if (kind === 'expense') {
     if (!/^\d+(\.\d{1,2})?$/.test(String(input.amount))) fail('金额最多保留两位小数');
     const cents = Math.round(Number(input.amount) * 100);
-    if (!Number.isSafeInteger(cents) || cents <= 0 || cents > 100000000) fail('金额需大于 0 且不超过 100 万元');
+    if (!Number.isSafeInteger(cents) || cents <= 0 || cents > MAX_LEDGER_CENTS) fail('金额需大于 0 且不超过 99,999,999.99 元');
     record.amount = cents / 100;
     record.cents = cents;
     record.category = cleanText(input.category || '其他', 30, '分类');

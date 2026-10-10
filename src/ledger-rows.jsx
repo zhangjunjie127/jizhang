@@ -3,8 +3,9 @@ import { ChevronRight, Trash2, X, Pencil } from 'lucide-react';
 import { ledgerCategory } from '../shared/ledger.mjs';
 import { CategoryIcon, categoryTone } from './categories';
 import { usePreferences } from './app-preferences';
+import { MoneyAmount } from './money-amount';
 
-export const money = cents => `${(cents / (Math.abs(cents) >= 1000000 ? 1000000 : 100)).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}${Math.abs(cents) >= 1000000 ? '万' : ''}`;
+export { exactMoney as money } from '../shared/money.mjs';
 
 export function LedgerRows({ entries, onEdit, onDelete }) {
   const { preferences } = usePreferences();
@@ -23,7 +24,7 @@ export function LedgerRows({ entries, onEdit, onDelete }) {
       }}>
         <span className={`record-icon ${categoryTone(category)}`}><CategoryIcon category={category} /></span>
         <span className="row-main"><strong>{record.payload.title}</strong><small>{category}{linked ? ' · 收回欠款' : ''}{record.payload.receipt ? ` · 小票 · ${record.payload.receipt.items.length} 项商品` : ''}</small></span>
-        <strong className={`ledger-amount ${record.payload.direction === 'income' ? 'income' : ''}`}>{record.payload.direction === 'income' ? '+' : '-'}{money(record.payload.cents)}</strong>
+        <strong className={`ledger-amount ${record.payload.direction === 'income' ? 'income' : ''}`}><MoneyAmount cents={record.payload.cents} prefix={record.payload.direction === 'income' ? '+' : '-'} /></strong>
       </button>
       {linked
         ? <button className="icon-button ledger-delete" aria-label={`查看原欠条${record.payload.title}`} title="查看原欠条" onClick={() => onEdit(record)}><ChevronRight size={16} /></button>

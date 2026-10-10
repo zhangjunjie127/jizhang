@@ -3,6 +3,7 @@ import { request, isNative } from './api';
 import { habitReminders } from '../shared/planner.mjs';
 import { taskReminderOccurrences } from '../shared/task-reminders.mjs';
 import { courseReminders } from '../shared/courses.mjs';
+import { healthReminders } from '../shared/health.mjs';
 
 export function HabitReminders({ userId, records = [], onNotify }) {
   const notify = useRef(onNotify);
@@ -20,16 +21,17 @@ export function HabitReminders({ userId, records = [], onNotify }) {
       loading = true;
       try {
         const state = await request('/planner');
+        const health = await request('/health/reminders').catch(() => ({ entries: [] }));
         if (!active) return;
         const now = Date.now();
         const taskDue = tasks.current.flatMap(record => taskReminderOccurrences(record, now - 60000, now)
           .map(at => ({ key: `task:${record.id}:${at}`, title: record.payload.title, at, task: true })));
-        const due = [...habitReminders(state.items, state.checks, now - 60000, 2), ...taskDue, ...courseReminders(state, now - 60000, 2)]
+        const due = [...habitReminders(state.items, state.checks, now - 60000, 2), ...taskDue, ...courseReminders(state, now - 60000, 2), ...healthReminders(health.entries, now - 60000, now)]
           .filter(item => item.at <= now && !seen.has(item.key));
         for (const item of due) {
           seen.add(item.key);
           if ('Notification' in window && Notification.permission === 'granted') {
-            try { new Notification(item.courseId ? '在在 · 课前提醒' : item.task ? '在在 · 待办提醒' : '在在 · 打卡提醒', { body: item.title, tag: item.key }); } catch {}
+            try { new Notification(item.healthId ? '在在 · 复诊提醒' : item.courseId ? '在在 · 课前提醒' : item.task ? '在在 · 待办提醒' : '在在 · 打卡提醒', { body: item.title, tag: item.key }); } catch {}
           }
         }
         if (due.length) {

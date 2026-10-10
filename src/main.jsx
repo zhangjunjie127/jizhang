@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import { getBase, getToken, isNative, request, syncReminders } from './api';
 import { AssistantEdge, DesktopAssistantLifecycle, NativeAssistant, overlaySession } from './floating-assistant';
+import { useAssistantPanelMotion } from './assistant-panel-motion';
 import { VoiceCall } from './voice';
 import { mergeMessages } from './timeline';
 import { Ledger, BatchReview } from './bookkeeping';
@@ -25,6 +26,7 @@ import { PreviewKeyboard } from './preview-keyboard';
 import { DebtManager } from './debts';
 import { DebtRepaymentReview } from './debt-repayment-review';
 import { MinePage } from './mine-page';
+import { HealthPage } from './health';
 import { SystemMessages } from './system-messages.jsx';
 import { AccountService } from './account-services';
 import { AccountSettings } from './account-settings';
@@ -214,7 +216,9 @@ function App() {
   const [page, updatePage] = useState(() => initialPage());
   const [mineView, setMineView] = useState('home');
   const [assistantOpen, setAssistantOpen] = useState(Boolean(overlaySession));
+  const assistantMotion = useAssistantPanelMotion(assistantOpen, setAssistantOpen, Boolean(overlaySession));
   const [nativeExpanded, setNativeExpanded] = useState(true);
+  const [nativeDock, setNativeDock] = useState('right');
   const [edgeVisible, setEdgeVisible] = useState(true);
   const [desktopEnabled, setDesktopEnabled] = useState(false);
   const [modal, setModal] = useState(null);
@@ -227,6 +231,7 @@ function App() {
   const [microphoneActive, setMicrophoneActive] = useState(false);
   const [callSeconds, setCallSeconds] = useState(0);
   const [plannerCreateSignal, setPlannerCreateSignal] = useState(0);
+  const [healthCreateSignal, setHealthCreateSignal] = useState(0);
   const [plannerCourseCreate, setPlannerCourseCreate] = useState(null);
   const [ledgerView, setLedgerView] = useState('details');
   const [debtCreateSignal, setDebtCreateSignal] = useState(0);
@@ -246,8 +251,10 @@ function App() {
   const readKey = state ? `zaizai-chat-read-${state.user.id}` : '';
   const chatReadAt = chatReadMarkers[readKey] || localStorage.getItem(readKey) || '';
   const unreadCheckins = state?.messages.filter(item => item.proactive && item.created > chatReadAt).length || 0;
+  useEffect(() => {
+    if (overlaySession?.separateCat) window.ZaizaiAssistant?.setUnread?.(unreadCheckins);
+  }, [unreadCheckins]);
   const badgeCount = id => id === 'chat' ? unreadCheckins : PAGE_KIND[id] ? pendingForPage(state.records, id).length : 0;
-  const weights = confirmed.filter(r => r.kind === 'weight').sort((a, b) => b.payload.date.localeCompare(a.payload.date) || b.created.localeCompare(a.created));
   function setPage(value) {
     if (value === 'chat') { openAssistant(); return; }
     if (!overlaySession) setAssistantOpen(false);
@@ -278,7 +285,7 @@ function App() {
   }
   function collapseAssistant() {
     if (overlaySession) window.ZaizaiAssistant.collapse();
-    else setAssistantOpen(false);
+    else assistantMotion.collapse();
   }
   async function toggleDesktopAssistant() {
     if (!isNative) { notify('网页仅支持应用内悬浮窗，桌面悬浮需使用安卓安装包'); return; }
@@ -348,15 +355,21 @@ function App() {
     const failed = event => notify(event.detail || '麦克风权限未开启');
     const stop = () => endCall();
     const visibility = event => setNativeExpanded(event.detail === 'open');
+    const dock = event => setNativeDock(event.detail === 'left' ? 'left' : 'right');
+    document.documentElement.classList.add('native-assistant-page');
     window.addEventListener('assistant-voice-ready', ready);
     window.addEventListener('assistant-voice-error', failed);
     window.addEventListener('assistant-hangup', stop);
     window.addEventListener('assistant-visibility', visibility);
+    window.addEventListener('assistant-dock', dock);
+    window.ZaizaiAssistant.syncPresentation?.();
     return () => {
       window.removeEventListener('assistant-voice-ready', ready);
       window.removeEventListener('assistant-voice-error', failed);
       window.removeEventListener('assistant-hangup', stop);
       window.removeEventListener('assistant-visibility', visibility);
+      window.removeEventListener('assistant-dock', dock);
+      document.documentElement.classList.remove('native-assistant-page');
     };
   }, [sending]);
   useEffect(() => {
@@ -527,7 +540,7 @@ function App() {
   return <LockBoundary {...(overlaySession ? {} : { key: state.user.id, user: state.user, onLogout: logout, onLock: () => { setAssistantOpen(false); setModal(null); } })}>
     {!overlaySession && <HabitReminders userId={state.user.id} records={state.records} onNotify={notify} />}
     <DesktopAssistantLifecycle userId={state.user.id} suspended={Boolean(callStatus)} onRunningChange={running => { setDesktopEnabled(running); setEdgeVisible(!running); }} />
-    <PreferencesProvider userId={state.user.id}><div className={`app-shell page-${page}${overlaySession ? ' native-assistant-host' : ''}`}>
+    <PreferencesProvider userId={state.user.id}><div className={`app-shell page-${page}${overlaySession ? ` native-assistant-host${nativeExpanded ? '' : ' is-collapsed'}` : ''}`}>
     <aside className="sidebar">
       <div className="brand"><img src="/app-icon.png" alt="" /><span>在在</span><small>内测</small></div>
       <nav aria-label="主要功能">{NAVIGATION.map(([id, Icon, label]) => <button key={id} aria-label={label} aria-current={page === id ? 'page' : undefined} className={page === id ? 'active' : ''} onClick={() => setPage(id)}><Icon size={20} /><span>{label}</span>{badgeCount(id) > 0 && <i aria-label={`${badgeCount(id)} 条待查看`}>{badgeCount(id)}</i>}</button>)}</nav>
@@ -536,7 +549,7 @@ function App() {
     </aside>
     <div className="workspace">
       <header className="topbar"><span>在在 / {PAGE_LABELS[page]}</span><span className="private-label"><ShieldCheck size={14} /> 邀请制内测</span></header>
-      {assistantOpen && <section className="chat-page assistant-panel" role="dialog" aria-label="助手对话" aria-modal="false">
+      {assistantOpen && <section ref={assistantMotion.panelRef} className="chat-page assistant-panel" role="dialog" aria-label="助手对话" aria-modal="false">
         <div className="chat-heading"><Avatar persona={state.user.persona} /><div><strong>{persona.name}<span className="ai-label">AI 助手</span></strong><small>{persona.label}</small></div><IconButton icon={Phone} label="发起语音通话" className="green-button" disabled={Boolean(callStatus)} onClick={() => startCall()} /><IconButton icon={Minus} label="收起助手" onClick={collapseAssistant} /></div>
         <div className="messages" onScroll={event => {
           const list = event.currentTarget;
@@ -564,16 +577,22 @@ function App() {
       {!overlaySession && page === 'tasks' && <Planner key={state.user.id} userId={state.user.id} widgetView={widgetView} openCourse={plannerCourseCreate} records={state.records} Modal={Modal} pending={<PendingSection scope="tasks" />} createSignal={plannerCreateSignal} onNotify={notify}
         onCreateTask={defaults => setModal({ type: 'record', kind: 'task', defaults })} onEditTask={record => setModal({ type: 'record', record })} onComplete={complete}
         onDeleteTask={record => action(`/records/${record.id}`, { method: 'DELETE' }, '已移入回收站，可恢复')} />}
-      {!overlaySession && PAGE_KIND[page] && page !== 'tasks' && <main className={`records-page module-page ${page}-page`}>
+      {!overlaySession && page === 'health' && <HealthPage key={state.user.id} user={state.user} records={state.records} Modal={Modal} pending={<PendingSection scope="health" />}
+        createSignal={healthCreateSignal} WeightChart={WeightChart}
+        onProfile={async gender => {
+          const result = await request('/account/profile', { method: 'PATCH', body: { gender } });
+          setState(previous => ({ ...previous, user: result.user }));
+          if (call.current?.ready) call.current.send({ type: 'app.refresh_context' });
+        }}
+        onWeight={() => setModal({ type: 'record', kind: 'weight' })}
+        onEditWeight={record => setModal({ type: 'record', record })} onDeleteWeight={safe(remove)} />}
+      {!overlaySession && page === 'ledger' && <main className={`records-page module-page ${page}-page`}>
         <div className="page-heading"><h1>{PAGE_LABELS[page]}</h1><div className="module-actions"><button className="primary record-add" onClick={() => setModal({ type: 'record', kind: PAGE_KIND[page] })}><Plus size={19} />{{ ledger: '记一笔', tasks: '添加待办', health: '记录体重' }[page]}</button></div></div>
         {page !== 'ledger' && <PendingSection />}
         {page === 'ledger' && <Ledger userId={state.user.id} view={ledgerView} setView={setLedgerView} debtCreateSignal={debtCreateSignal} records={state.records} pending={<PendingSection />} onEdit={record => setModal(record.source === 'debt-repayment' ? { type: 'debts', billId: record.payload.debtBillId } : { type: 'record', record })} onDelete={safe(remove)} onTrash={() => openTrash('expense')} onError={notify} onNotify={notify} onDebtChange={result => {
           acceptState(result);
           if (call.current?.ready) call.current.send({ type: 'app.refresh_context' });
         }} />}
-        {page === 'health' && <><h2 className="health-subtitle">体重记录</h2><div className="weight-overview"><div><span>最近一次</span><strong>{weights[0]?.payload.kg || '—'}<small>kg</small></strong></div><div><span>记录次数</span><strong>{weights.length}<small>次</small></strong></div><div><span>与上次相比</span><strong>{weights.length > 1 ? `${(weights[0].payload.kg - weights[1].payload.kg).toFixed(1)}` : '—'}<small>kg</small></strong></div></div>
-          {weights.length >= 2 && <WeightChart records={weights} />}
-          <p className="health-note"><Heart size={15} /> 体重会自然波动，记录不等于评价自己。</p><section className="record-list">{weights.length ? weights.map(record => <div className="ledger-row" key={record.id}><span className="record-icon blue"><Scale size={18} /></span><div className="row-main"><strong>{record.payload.date}</strong><small>体重记录</small></div><strong>{record.payload.kg} <small className="muted">kg</small></strong><IconButton icon={Trash2} label="删除体重记录" onClick={safe(() => remove(record))} /></div>) : <Empty icon={Scale} title="从一次记录开始" detail="慢慢了解自己的变化。" />}</section></>}
       </main>}
       {page === 'mine' && mineView === 'home' && <MinePage user={state.user} records={state.records}
         onMessages={() => { setMineView('messages'); window.scrollTo({ top: 0 }); }}
@@ -604,7 +623,7 @@ function App() {
       </SettingsMenu>}
     </div>
     <nav className="mobile-nav" aria-label="主要功能">{NAVIGATION.map(([id, Icon, label], index) => <React.Fragment key={id}>
-      {index === 2 && <button className="nav-create" aria-label={page === 'ledger' && ledgerView === 'debt' ? '新增借款' : { ledger: '记一笔', tasks: '添加待办', health: '记录体重' }[page] || '新建记录'} title={page === 'ledger' && ledgerView === 'debt' ? '新增借款' : { ledger: '记一笔', tasks: '新建日程', health: '记录体重' }[page] || '新建记录'} onClick={() => page === 'ledger' && ledgerView === 'debt' ? setDebtCreateSignal(value => value + 1) : page === 'tasks' ? setPlannerCreateSignal(value => value + 1) : setModal({ type: 'record-kind', scope: page })}><Plus size={30} /></button>}
+      {index === 2 && <button className="nav-create" aria-label={page === 'ledger' && ledgerView === 'debt' ? '新增借款' : { ledger: '记一笔', tasks: '添加待办', health: '添加健康记录' }[page] || '新建记录'} title={page === 'ledger' && ledgerView === 'debt' ? '新增借款' : { ledger: '记一笔', tasks: '新建日程', health: '添加健康记录' }[page] || '新建记录'} onClick={() => page === 'ledger' && ledgerView === 'debt' ? setDebtCreateSignal(value => value + 1) : page === 'tasks' ? setPlannerCreateSignal(value => value + 1) : page === 'health' ? setHealthCreateSignal(value => value + 1) : setModal({ type: 'record-kind', scope: page })}><Plus size={30} /></button>}
       <button aria-label={label} aria-current={page === id ? 'page' : undefined} className={page === id ? 'active' : ''} onClick={() => setPage(id)}><Icon size={22} /><span>{label}</span>{badgeCount(id) > 0 && <i aria-label={`${badgeCount(id)} 条待查看`} />}</button>
     </React.Fragment>)}</nav>
     {modal?.type === 'account-service' && <AccountService type={modal.service} Modal={Modal} user={state.user} onClose={() => setModal(null)} onPasswordChanged={() => { if (call.current) endCall(); }} />}
@@ -645,7 +664,8 @@ function App() {
     {modal?.type === 'memories' && <Modal title="我们记得的事" onClose={() => setModal(null)}>{state.memories.length ? state.memories.map(memory => <div className="memory-row" key={memory.id}><div><p>{memory.text}</p><small>{new Date(memory.created).toLocaleDateString('zh-CN')}</small></div><IconButton icon={Trash2} label="删除这条记忆" onClick={safe(async () => { if (window.confirm('删除这条记忆？原聊天内容仍会保留。')) await action(`/memories/${memory.id}`, { method: 'DELETE' }); })} /></div>) : <Empty icon={History} title="慢慢了解你" detail="助手记住的偏好和约定会出现在这里。" />}<button className="text-button danger" onClick={safe(async () => { if (window.confirm('清空全部聊天与记忆？记账、待办和体重记录会保留，此操作无法撤销。')) { await action('/history', { method: 'DELETE' }); setModal(null); } })}>清空聊天与记忆</button></Modal>}
     {modal?.type === 'usage' && <Modal title="算力用量" onClose={() => setModal(null)}><div className="usage-list">{usage?.usage.map(item => <div key={item.kind}><span>{item.kind === 'text' ? '文字模型响应' : '语音模型响应'}</span><strong>{item.count} 次</strong></div>)}</div><p className="modal-hint">目前使用内测服务，未开放充值、扣费或支付订单。调用次数不等于费用。</p></Modal>}
     {modal?.type === 'privacy' && <Modal title="隐私与内测说明" onClose={() => setModal(null)}><div className="privacy-copy"><p>你对话的是 AI，而不是真人。亲密模式不会改变工具权限，也不会阻止你暂停或离开。</p><p>通话会向已配置的 AI 服务实时传送声音；本 App 不保存原始录音，会保存文字转录。上游服务的数据政策另行适用。</p><p>记录、对话和记忆保存在私有后端。当前版本采用自填生日限制关系模式，不是正式年龄核验。</p><p>安卓待办提醒需要系统通知权限；系统节电策略可能造成延迟。主动关心在服务运行时生成，App 关闭时暂不推送 AI 消息。</p><p>当前为局域网内测版，不适合公网部署或录入敏感信息，正式开放前需完成 HTTPS、年龄核验和数据管理。</p></div></Modal>}
-    {!overlaySession && edgeVisible && !assistantOpen && <AssistantEdge onOpen={openAssistant} active={Boolean(callStatus)} unread={unreadCheckins} />}
+    {!overlaySession && edgeVisible && <AssistantEdge concealed={assistantOpen} onOpen={openAssistant} active={Boolean(callStatus)} unread={unreadCheckins} />}
+    {overlaySession && !overlaySession.separateCat && <AssistantEdge nativeDock={nativeDock} onOpen={() => window.ZaizaiAssistant.expand()} active={Boolean(callStatus)} unread={unreadCheckins} />}
     {toast && <div className="toast" role="status">{toast}</div>}
   </div></PreferencesProvider></LockBoundary>;
 }

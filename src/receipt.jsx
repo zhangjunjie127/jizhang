@@ -1,4 +1,5 @@
 import { DateInput } from './date-picker';
+import { MAX_LEDGER_AMOUNT } from '../shared/money.mjs';
 import React, { useEffect, useRef, useState } from 'react';
 import { Camera, ImagePlus, LoaderCircle, Check, Pencil, Trash2, Plus, ReceiptText } from 'lucide-react';
 import { request } from './api';
@@ -6,7 +7,7 @@ import { requestId } from './navigation';
 import { receiptCents, validateReceipt } from '../shared/receipt.mjs';
 import { EXPENSE_CATEGORIES as CATEGORIES, CategoryIcon } from './categories';
 
-async function prepareImage(file) {
+export async function prepareImage(file) {
   if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) throw new Error('请选择 JPG、PNG 或 WebP 图片');
   if (file.size > 20 * 1024 * 1024) throw new Error('原图超过 20MB，请裁剪后上传');
   const bitmap = await createImageBitmap(file);
@@ -97,7 +98,7 @@ export function ReceiptModal({ Modal, initial, onSave, onClose }) {
           <label>账目名称<input value={payload.title} maxLength={160} required onChange={e => change('title', e.target.value)} /></label>
           <div className="form-columns"><label>购买日期<DateInput type="date" required value={payload.date} onChange={e => change('date', e.target.value)} /></label>
             <label>整笔分类<select value={payload.category} onChange={e => change('category', e.target.value)}>{[...new Set([...CATEGORIES, payload.category])].map(name => <option key={name}>{name}</option>)}</select></label></div>
-          <label>实付金额（元）<input type="number" inputMode="decimal" min=".01" max="1000000" step=".01" required value={payload.amount} onChange={e => change('amount', e.target.value)} /></label>
+          <label>实付金额（元）<input type="number" inputMode="decimal" min=".01" max={MAX_LEDGER_AMOUNT} step=".01" required value={payload.amount} onChange={e => change('amount', e.target.value)} /></label>
         </fieldset> : <div className="receipt-overview"><ReceiptText size={24} /><div><h2>{payload.title}</h2><small>{payload.date} · {payload.category} · {payload.receipt.items.length} 项商品</small></div><strong>{amountLabel(payload.amount)}</strong></div>}
         {editing && warnings.length > 0 && <div className="receipt-warnings"><strong>识别待核对</strong><ul>{warnings.map((warning, i) => <li key={i}>{warning}</li>)}</ul></div>}
         {[...groups].map(([category, items]) => <section className="receipt-group" key={category} aria-label={`${category}商品`}>
@@ -109,7 +110,7 @@ export function ReceiptModal({ Modal, initial, onSave, onClose }) {
             {editing && openItem === item._key && <fieldset className="receipt-item-edit" disabled={busy}>
               <label>商品名称<input value={item.name} required maxLength={120} onChange={e => changeItem(item._key, { name: e.target.value })} /></label>
               <div className="form-columns"><label>数量<input type="number" min=".001" max="100000" step=".001" required value={item.quantity} onChange={e => changeItem(item._key, { quantity: e.target.value })} /></label>
-                <label>小计（元）<input type="number" inputMode="decimal" min="0" max="1000000" step=".01" required value={item.amount} onChange={e => changeItem(item._key, { amount: e.target.value })} /></label></div>
+                <label>小计（元）<input type="number" inputMode="decimal" min="0" max={MAX_LEDGER_AMOUNT} step=".01" required value={item.amount} onChange={e => changeItem(item._key, { amount: e.target.value })} /></label></div>
               <div className="form-columns"><label>品类<select value={item.category} onChange={e => changeItem(item._key, { category: e.target.value })}>{[...new Set([...CATEGORIES.filter(v => v !== '工资'), item.category])].map(name => <option key={name}>{name}</option>)}</select></label>
                 <label>单位<input value={item.unit} maxLength={10} onChange={e => changeItem(item._key, { unit: e.target.value })} /></label></div>
               <button type="button" className="text-button danger" onClick={() => changeReceipt('items', payload.receipt.items.filter(row => row._key !== item._key))}><Trash2 size={16} />删除此项</button>

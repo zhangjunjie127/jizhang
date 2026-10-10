@@ -16,6 +16,7 @@ import { createAccountDeletionStore } from './account-deletion.mjs';
 import { createPlannerStore } from './planner.mjs';
 import { createTaskPhotoStore } from './task-photos.mjs';
 import { createAccountId, migrateAccountIds } from './account-ids.mjs';
+import { createHealthStore, FOOD_PROMPT, foodDraft } from './health.mjs';
 import {
   PERSONAS, ageOn, cleanText, fail, iso, passwordHash, systemPrompt,
   tokenHash, tools, validateRecord, verifyPassword,
@@ -63,6 +64,7 @@ const accountServices = createAccountServices(db);
 const accountDeletions = createAccountDeletionStore(db);
 const planner = createPlannerStore(db);
 const taskPhotos = createTaskPhotoStore(db);
+const health = createHealthStore(db);
 const BASE = (process.env.CPA_BASE_URL || '').replace(/\/$/, '');
 if (!db.prepare('PRAGMA table_info(messages)').all().some(column => column.name === 'persona')) {
   db.exec("ALTER TABLE messages ADD COLUMN persona TEXT NOT NULL DEFAULT 'gentle'");
@@ -346,7 +348,7 @@ const server = http.createServer(async (req, res) => {
       res.setHeader('Access-Control-Allow-Origin', req.headers.origin);
       res.setHeader('Vary', 'Origin');
       res.setHeader('Access-Control-Allow-Headers', 'Authorization, Content-Type');
-      res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PATCH,DELETE,OPTIONS');
+      res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,PATCH,DELETE,OPTIONS');
     }
     if (req.method === 'OPTIONS') { res.writeHead(204); res.end(); return; }
     const path = new URL(req.url, 'http://localhost').pathname;
@@ -395,6 +397,31 @@ const server = http.createServer(async (req, res) => {
     const token = req.headers.authorization?.replace(/^Bearer /, '');
     const user = userFromToken(token);
     limit(`api:${user.id}`, 300, 60000);
+    if (path === '/api/health/dashboard' && req.method === 'GET') return json(res, 200, health.state(user.id));
+    if (path === '/api/health/reminders' && req.method === 'GET') return json(res, 200, {
+      entries: health.state(user.id).entries.filter(entry => entry.kind === 'visit' && entry.followUp)
+        .map(({ id, kind, followUp }) => ({ id, kind, followUp })),
+    });
+    if (path === '/api/health/settings' && req.method === 'PUT') return json(res, 200, health.settings(user.id, await readBody(req, 4096)));
+    if (path === '/api/health/entries' && req.method === 'POST') return json(res, 201, health.save(user.id, await readBody(req, 64000)));
+    if (/^\/api\/health\/entries\/[0-9a-f-]{36}$/.test(path)) {
+      const id = path.split('/').at(-1);
+      if (req.method === 'PATCH') return json(res, 200, health.save(user.id, await readBody(req, 64000), id));
+      if (req.method === 'DELETE') return json(res, 200, health.remove(user.id, id, (await readBody(req, 4096)).revision));
+    }
+    if (path === '/api/health/recognize' && req.method === 'POST') {
+      limit(`food:${user.id}`, 5, 60000);
+      limit(`food-day:${user.id}`, 30, 86400000);
+      const body = await readBody(req, 6 * 1024 * 1024);
+      if (body.consent !== true) fail('请先同意将照片发送至 AI 服务进行识别');
+      const image = receiptImage(body.image);
+      const result = await completion(user, [
+        { role: 'system', content: FOOD_PROMPT },
+        { role: 'user', content: [{ type: 'text', text: '识别可见食物并估算该份营养，返回JSON。' },
+          { type: 'image_url', image_url: { url: image.dataUrl, detail: 'high' } }] },
+      ], false, 4000);
+      return json(res, 200, foodDraft(result.content));
+    }
     if (path === '/api/task-photos' && req.method === 'POST') {
       limit(`task-photos:${user.id}`, 30, 60000);
       const body = await readBody(req, 860000);

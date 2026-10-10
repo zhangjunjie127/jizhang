@@ -4,11 +4,10 @@ import { billPeriods } from '../shared/ledger.mjs';
 import { money } from './ledger-rows';
 import './bill-report.css';
 import { usePreferences } from './app-preferences';
+import { MoneyAmount } from './money-amount';
 
-const exact = cents => `${(cents / 100).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} 元`;
 function Amount({ cents, className = '', hidden = false }) {
-  if (hidden) return <span className={`bill-money ${className}`} aria-label="金额已隐藏">****</span>;
-  return <span className={`bill-money ${className}`} title={exact(cents)} aria-label={exact(cents)}>{money(cents)}</span>;
+  return <MoneyAmount cents={cents} hidden={hidden} className={`bill-money ${className}`} />;
 }
 
 export function BillReport({ records, mode, year, onYearChange, onOpenYear, onOpenMonth }) {

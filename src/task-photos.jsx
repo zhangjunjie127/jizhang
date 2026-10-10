@@ -22,7 +22,7 @@ async function preparePhoto(file) {
   } finally { bitmap.close(); }
 }
 
-export function TaskPhotos({ photos, onChange, disabled, onBusyChange }) {
+export function TaskPhotos({ photos, onChange, disabled, onBusyChange, title = '拍照留档' }) {
   const camera = useRef(null), album = useRef(null), dialog = useRef(null);
   const grid = useRef(null), revealPhoto = useRef(false);
   const [images, setImages] = useState({});
@@ -65,7 +65,7 @@ export function TaskPhotos({ photos, onChange, disabled, onBusyChange }) {
     finally { setLoading(false); onBusyChange(false); }
   }
   return <section className="task-photos">
-    <div className="task-photo-heading"><h3>拍照留档</h3><span>{photos.length}/6</span></div>
+    <div className="task-photo-heading"><h3>{title}</h3><span>{photos.length}/6</span></div>
     <input hidden ref={camera} aria-label="拍摄留档照片" type="file" accept="image/*" capture="environment" onChange={choose} />
     <input hidden ref={album} aria-label="选择留档照片" type="file" accept="image/*" multiple onChange={choose} />
     <div className="task-photo-actions">

@@ -73,11 +73,14 @@ try {
     assert.equal(await dialog.getByLabel('备注', { exact: true }).inputValue(), '测试备注');
     assert.equal(writes.length, 0, 'Navigating must never save');
     const amount = dialog.getByLabel('金额（元）', { exact: true });
-    for (const invalid of ['0', '1000001', '12.345']) {
+    for (const invalid of ['0', '100000000', '12.345']) {
       await amount.fill(invalid);
       await dialog.getByRole('button', { name: '保存', exact: true }).click();
       assert.equal(writes.length, 0);
     }
+    await amount.fill('99999999.99');
+    assert.equal(await amount.evaluate(input => input.checkValidity()), true);
+    assert.equal(await amount.inputValue(), '99999999.99', 'Editing keeps all digits, never compact labels');
     await amount.fill('35.60');
     await page.screenshot({ path: `artifacts/entry-fill-${width}.png` });
     await dialog.getByRole('button', { name: '更换类别' }).click();

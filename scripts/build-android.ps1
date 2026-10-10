@@ -1,6 +1,7 @@
 param(
     [Parameter(Mandatory = $true)][string]$ApiUrl,
-    [switch]$Usb
+    [switch]$Usb,
+    [switch]$NoProxy
 )
 $ErrorActionPreference = 'Stop'
 Set-Location (Split-Path $PSScriptRoot -Parent)
@@ -11,7 +12,9 @@ if (-not $uri.IsAbsoluteUri -or $uri.Scheme -notin @('http', 'https') -or $uri.A
 if ($uri.Host -in @('0.0.0.0', '::', '[::]')) { throw 'Use a reachable server address, not a bind address.' }
 if ($uri.IsLoopback -and -not $Usb) { throw 'Loopback requires -Usb and adb reverse; use the computer LAN address for Wi-Fi.' }
 $origin = $uri.GetLeftPart([UriPartial]::Authority)
-$health = Invoke-RestMethod "$origin/api/health" -TimeoutSec 10
+$healthOptions = @{ TimeoutSec = 20 }
+if ($NoProxy) { $healthOptions.NoProxy = $true }
+$health = Invoke-RestMethod "$origin/api/health" @healthOptions
 if (-not $health.ok -or $health.app -ne 'zaizai') { throw 'Backend health check failed.' }
 if (-not $env:JAVA_HOME) {
     $jdk = Get-ChildItem 'C:\Program Files\Eclipse Adoptium' -Directory -Filter 'jdk-17*' | Select-Object -First 1
@@ -35,7 +38,7 @@ try {
     Copy-Item -LiteralPath $apk -Destination 'artifacts/zaizai-mvp-debug.apk'
     Write-Output "APK: $PWD\artifacts\zaizai-mvp-debug.apk"
     Write-Output "Default backend: $origin"
-    Write-Output 'Phone connectivity still requires LAN access or configured USB forwarding.'
+    Write-Output 'Verify this backend is reachable from the tester phone network; temporary tunnels must stay running.'
 } finally {
     $env:VITE_NATIVE_API_URL = $previousApi
 }

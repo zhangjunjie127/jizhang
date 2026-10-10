@@ -10,6 +10,8 @@ import { CalculatorTools } from './calculator-tools';
 import { LedgerDatePicker } from './ledger-date-picker';
 import { LedgerRows, money } from './ledger-rows';
 import { usePreferences } from './app-preferences';
+import { MAX_LEDGER_AMOUNT } from '../shared/money.mjs';
+import { MoneyAmount } from './money-amount';
 export { CATEGORIES, CategoryIcon } from './categories';
 
 const currentMonth = () => new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Shanghai' }).slice(0, 7);
@@ -29,8 +31,6 @@ export function Ledger({ records, userId, pending, onEdit, onDelete, onTrash, on
   const totals = summarizeLedger(filtered);
   const averageDays = filters.date ? 1 : ledgerPeriodDays(records, filters.month);
   const expenseText = preferences.hideTotals ? '****' : money(totals.expense);
-  const incomeText = preferences.hideTotals ? '****' : money(totals.income);
-  const averageText = preferences.hideTotals ? '****' : money(Math.round(totals.expense / averageDays));
   const monthTotals = summarizeLedger(filterLedger(records, { month: filters.month }));
   const categories = [...new Set([...CATEGORIES.filter(name => name !== '收回借款'), ...records.filter(r => r.kind === 'expense').map(r => ledgerCategory(r.payload))])];
   const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Shanghai' });
@@ -72,9 +72,9 @@ export function Ledger({ records, userId, pending, onEdit, onDelete, onTrash, on
       </div>
     </div>
     <div className="ledger-summary" aria-label="筛选账目汇总">
-      <div className="summary-expense"><strong data-testid="ledger-expense" title={preferences.hideTotals ? '金额已隐藏' : `${(totals.expense / 100).toFixed(2)} 元`} style={{ fontSize: expenseText.length > 7 ? 20 : expenseText.length > 5 ? 24 : 38 }}>{expenseText}</strong><span>{periodLabel}支出 / 元{activeFilters ? ' · 已筛选' : ''}</span></div>
-      <div className="summary-income"><span>{periodLabel}收入 / 元</span><strong>{incomeText}</strong></div>
-      <div className="summary-average" title={`支出总额除以 ${averageDays} 个自然日；本年或本月均截至今天。`}><span>日均支出 / 元</span><strong data-testid="ledger-daily-average">{averageText}</strong></div>
+      <div className="summary-expense"><strong data-testid="ledger-expense" title={preferences.hideTotals ? '金额已隐藏' : `${(totals.expense / 100).toFixed(2)} 元`} style={{ fontSize: expenseText.length > 7 ? 20 : expenseText.length > 5 ? 24 : 38 }}><MoneyAmount cents={totals.expense} hidden={preferences.hideTotals} /></strong><span>{periodLabel}支出 / 元{activeFilters ? ' · 已筛选' : ''}</span></div>
+      <div className="summary-income"><span>{periodLabel}收入 / 元</span><strong><MoneyAmount cents={totals.income} hidden={preferences.hideTotals} /></strong></div>
+      <div className="summary-average" title={`支出总额除以 ${averageDays} 个自然日；本年或本月均截至今天。`}><span>日均支出 / 元</span><strong data-testid="ledger-daily-average"><MoneyAmount cents={Math.round(totals.expense / averageDays)} hidden={preferences.hideTotals} /></strong></div>
     </div></div>
     {!statistics && <section className="ledger-query" aria-label="账目查询">
       <div className="ledger-query-toolbar">
@@ -99,14 +99,14 @@ export function Ledger({ records, userId, pending, onEdit, onDelete, onTrash, on
       <div className="section-heading"><h2>{filters.month || '全部月份'} · 支出分类</h2></div>
       {monthTotals.categories.length ? monthTotals.categories.map(({ name, cents }) => <button className={`category-line ${categoryTone(name)} ${filters.category === name ? 'selected' : ''}`} key={name} onClick={() => { setFilters(p => ({ ...p, date: '', direction: 'expense', category: name })); setStatistics(false); }} aria-label={`查看${name}支出`}>
         <span className="category-name"><span className="category-symbol"><CategoryIcon category={name} size={18} /></span><span>{name}</span></span><span className="category-bar"><i style={{ width: `${cents / monthTotals.expense * 100}%` }} /></span>
-        <span className="category-amount">¥ {money(cents)}<small>{(cents / monthTotals.expense * 100).toFixed(1)}%</small></span>
+        <span className="category-amount"><MoneyAmount cents={cents} prefix="¥ " /><small>{(cents / monthTotals.expense * 100).toFixed(1)}%</small></span>
       </button>) : <div className="empty"><Wallet size={28} /><strong>{yearly ? '本年' : '本月'}还没有支出</strong></div>}
     </section>}
     {!statistics && <section className="record-list" aria-label="账目明细">
       {days.size ? [...days].map(([date, entries]) => {
         const day = summarizeLedger(entries);
         const expanded = !canCollapseDays || !collapsedDays[date];
-        return <section className="ledger-day" key={date} aria-label={date === today ? '今天收支' : date === yesterday ? '昨天收支' : date}><div className={`ledger-day-heading${canCollapseDays ? ' is-collapsible' : ''}`}><time dateTime={date}>{[today, yesterday].includes(date) ? <><strong>{date === today ? '今天' : '昨天'}</strong><small>{date}</small></> : date}</time><span className="day-totals"><span>收入 {money(day.income)}</span><span>支出 {money(day.expense)}</span></span>
+        return <section className="ledger-day" key={date} aria-label={date === today ? '今天收支' : date === yesterday ? '昨天收支' : date}><div className={`ledger-day-heading${canCollapseDays ? ' is-collapsible' : ''}`}><time dateTime={date}>{[today, yesterday].includes(date) ? <><strong>{date === today ? '今天' : '昨天'}</strong><small>{date}</small></> : date}</time><span className="day-totals"><span>收入 <MoneyAmount cents={day.income} /></span><span>支出 <MoneyAmount cents={day.expense} /></span></span>
           {canCollapseDays && <button className="icon-button ledger-day-toggle" aria-label={`${expanded ? '收起' : '展开'}${date}账目`} title={expanded ? '收起当天账目' : '展开当天账目'} aria-expanded={expanded} aria-controls={`ledger-day-${date}`} onClick={() => setCollapsedDays(previous => ({ ...previous, [date]: !previous[date] }))}>{expanded ? <ChevronDown size={18} /> : <ChevronRight size={18} />}</button>}
         </div>
         <div id={`ledger-day-${date}`} hidden={!expanded}>
@@ -138,7 +138,7 @@ export function BatchReview({ records, onConfirm, onClose, onReload }) {
       <label className="batch-select"><input type="checkbox" aria-label={`选择第${index + 1}笔`} checked={record.selected} disabled={busy} onChange={e => setRows(rows.map(r => r.id === record.id ? { ...r, selected: e.target.checked } : r))} />第 {index + 1} 笔</label>
       <fieldset disabled={!record.selected || busy}>
         <div className="form-columns">
-          <label>金额（元）<input aria-label={`第${index + 1}笔金额`} type="number" inputMode="decimal" min=".01" max="1000000" step=".01" required value={record.payload.amount} onChange={e => update(record.id, 'amount', e.target.value)} /></label>
+          <label>金额（元）<input aria-label={`第${index + 1}笔金额`} type="number" inputMode="decimal" min=".01" max={MAX_LEDGER_AMOUNT} step=".01" required value={record.payload.amount} onChange={e => update(record.id, 'amount', e.target.value)} /></label>
           <label>收支<select value={record.payload.direction} onChange={e => update(record.id, 'direction', e.target.value)}><option value="expense">支出</option><option value="income">收入</option></select></label>
         </div>
         <label>备注<input aria-label={`第${index + 1}笔备注`} value={record.payload.title} maxLength={160} onChange={e => update(record.id, 'title', e.target.value)} /></label>

@@ -1,0 +1,9 @@
+.money-amount{display:inline-block;width:100%;max-width:100%;min-width:0;white-space:nowrap;vertical-align:bottom;font-variant-numeric:tabular-nums}
+.money-amount>.money-value{display:inline;font:inherit;color:inherit;white-space:nowrap}
+.ledger .ledger-summary .summary-expense>strong{width:100%;min-width:0}
+.ledger .ledger-summary .summary-income>strong,.ledger .ledger-summary .summary-average>strong{min-width:0;flex:0 1 auto;max-width:100%}
+.ledger .ledger-entry .ledger-amount{width:140px;max-width:42%;min-width:0;flex:0 1 140px}
+.ledger .day-totals{flex:1;min-width:0}
+.ledger .day-totals>span{display:flex;gap:4px;min-width:min(100%,100px);max-width:100%}
+.ledger .day-totals .money-amount{flex:1;min-width:0}
+.ledger .category-amount{min-width:0}

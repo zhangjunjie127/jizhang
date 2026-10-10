@@ -45,12 +45,67 @@ after(async () => {
   rmSync(data, { recursive: true, force: true });
 });
 
+test('native course settings preflight permits PUT and rejects unrelated origins', async () => {
+  for (const origin of ['https://localhost', 'capacitor://localhost']) {
+    const response = await fetch(`${base}/api/planner/course-settings`, {
+      method: 'OPTIONS',
+      headers: { Origin: origin, 'Access-Control-Request-Method': 'PUT',
+        'Access-Control-Request-Headers': 'authorization,content-type' },
+    });
+    assert.equal(response.status, 204);
+    assert.equal(response.headers.get('access-control-allow-origin'), origin);
+    assert.ok(response.headers.get('access-control-allow-methods').split(',').includes('PUT'));
+  }
+  const denied = await fetch(`${base}/api/planner/course-settings`, {
+    method: 'OPTIONS', headers: { Origin: 'https://untrusted.example', 'Access-Control-Request-Method': 'PUT' },
+  });
+  assert.equal(denied.status, 403);
+  assert.equal(denied.headers.get('access-control-allow-origin'), null);
+});
+
 test('money is validated and converted to integer cents', () => {
   assert.equal(validateRecord('expense', { amount: '12.30' }).cents, 1230);
   assert.throws(() => validateRecord('expense', { amount: '12.301' }));
   assert.throws(() => validateRecord('expense', { amount: -1 }));
   assert.throws(() => validateRecord('weight', { kg: 'oops' }));
   assert.throws(() => validateRecord('task', { title: 'task', date: '2026-02-30' }));
+});
+test('health API enforces authentication, consent, account isolation and explicit saves', async () => {
+  assert.equal((await api('/health/dashboard')).status, 401);
+  const initial = await api('/health/dashboard', { token: user.token });
+  assert.equal(initial.status, 200);
+  const created = await api('/health/entries', { token: user.token, method: 'POST', body: {
+    requestId: randomUUID(), kind: 'water', date: '2026-10-01', ml: 250,
+  } });
+  assert.equal(created.status, 201);
+  const entry = created.data.entries[0];
+  assert.equal((await api(`/health/entries/${entry.id}`, { token: other.token, method: 'DELETE', body: { revision: entry.revision } })).status, 404);
+  assert.equal((await api('/health/dashboard', { token: other.token })).data.entries.length, 0);
+  assert.equal((await api('/health/recognize', { token: user.token, method: 'POST', body: { image: 'bad', consent: false } })).status, 400);
+  assert.equal((await api('/health/recognize', { token: user.token, method: 'POST', body: {
+    image: 'data:image/png;base64,iVBORw0KGgo=', consent: true,
+  } })).status, 503);
+  assert.equal((await api('/health/dashboard', { token: user.token })).data.entries.length, initial.data.entries.length + 1);
+  const snapshot = (await api('/state', { token: user.token })).data;
+  assert.equal(snapshot.health, undefined);
+  assert.equal(snapshot.records.some(row => row.id === entry.id), false);
+  await api(`/health/entries/${entry.id}`, { token: user.token, method: 'DELETE', body: { revision: entry.revision } });
+});
+test('large ledger amounts persist and export exact cents while rejecting one hundred million', async () => {
+  const account = (await api('/register', { method: 'POST', body: {
+    username: 'amount-boundary', password: 'test-password-123', name: 'Limit', birthday: '2000-01-01', invite: 'test-invite',
+  } })).data;
+  const saved = await api('/records', { token: account.token, method: 'POST', body: {
+    kind: 'expense', confirmed: true, payload: { amount: '99999999.99', direction: 'income', title: 'Boundary', date: '2026-10-09' },
+  } });
+  assert.equal(saved.status, 201);
+  assert.equal(saved.data.records[0].payload.cents, 9999999999);
+  const csv = await fetch(`${base}/api/ledger/export`, { headers: { Authorization: `Bearer ${account.token}` } });
+  assert.equal(csv.status, 200);
+  assert.match(await csv.text(), /99999999\.99/);
+  assert.equal((await api('/records', { token: account.token, method: 'POST', body: {
+    kind: 'expense', payload: { amount: '100000000' },
+  } })).status, 400);
 });
 test('age and password boundaries', () => {
   assert.equal(ageOn('2008-09-17', new Date('2026-09-16T00:00:00Z')), 17);

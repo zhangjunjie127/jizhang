@@ -14,6 +14,7 @@ assert.ok(login.token);
 const browser = await chromium.launch({
   channel: 'msedge', headless: true,
   args: [
+    ...(process.env.TEST_NO_PROXY === '1' ? ['--no-proxy-server'] : []),
     '--use-fake-ui-for-media-stream',
     '--use-fake-device-for-media-stream',
     `--use-file-for-fake-audio-capture=${resolve('artifacts/synthetic-input.wav')}`,
@@ -64,6 +65,7 @@ try {
   await page.getByRole('button', { name: '静音', exact: true }).click();
   await page.locator('.mobile-nav').getByRole('button', { name: '记账', exact: true }).click();
   await page.getByRole('button', { name: '记一笔', exact: true }).click();
+  if (await page.locator('.add-menu').isVisible()) await page.locator('.add-menu').getByRole('button', { name: '记一笔', exact: true }).click();
   await page.getByRole('button', { name: '支出', exact: true }).click();
   await page.getByRole('button', { name: '午餐', exact: true }).click();
   await page.getByLabel('金额（元）', { exact: true }).fill('9.90');

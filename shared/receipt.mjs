@@ -1,9 +1,11 @@
+import { MAX_LEDGER_CENTS } from './money.mjs';
+
 function invalid(message) { throw Object.assign(new Error(message), { status: 400 }); }
 export function receiptCents(value, signed = false) {
   const text = typeof value === 'number' || typeof value === 'string' ? String(value).trim() : '';
   if (!(signed ? /^-?\d+(\.\d{1,2})?$/ : /^\d+(\.\d{1,2})?$/).test(text)) invalid('金额需填写数字，最多两位小数');
   const cents = Math.round(Number(text) * 100);
-  if (!Number.isSafeInteger(cents) || Math.abs(cents) > 100000000) invalid('金额超出范围');
+  if (!Number.isSafeInteger(cents) || Math.abs(cents) > MAX_LEDGER_CENTS) invalid('金额超出范围');
   return cents;
 }
 const textField = (value, max, label, required = true) => {

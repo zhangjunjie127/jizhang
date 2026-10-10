@@ -1,9 +1,11 @@
-import { readFileSync, writeFileSync } from 'node:fs';
+import { readFileSync, writeFileSync, readdirSync } from 'node:fs';
 
 // Preserve compressed frames and transparency; only change GIF loop metadata.
 const durations = {};
-for (let index = 1; index <= 3; index++) {
-  const name = `assistant-${String(index).padStart(2, '0')}`;
+const prefix = process.argv[2] || 'new-cat';
+if (!['new-cat', 'center-cat'].includes(prefix)) throw new Error('Unknown assistant asset set');
+for (const file of readdirSync(new URL('../public/assistant-gifs/', import.meta.url)).filter(name => name.startsWith(`${prefix}-`) && /-\d+\.gif$/.test(name)).sort()) {
+  const name = file.replace('.gif', '');
   const path = new URL(`../public/assistant-gifs/${name}.gif`, import.meta.url);
   const data = readFileSync(path);
   let cursor = 13 + ((data[10] & 128) ? 3 * (2 ** ((data[10] & 7) + 1)) : 0);
@@ -45,5 +47,5 @@ for (let index = 1; index <= 3; index++) {
     Buffer.concat([parts[0], repeat, ...parts.slice(1)]));
   durations[`/assistant-gifs/${name}.gif`] = duration;
 }
-writeFileSync(new URL('../src/assistant-animation-durations.json', import.meta.url), `${JSON.stringify(durations, null, 2)}\n`);
+writeFileSync(new URL(`../src/${prefix === 'center-cat' ? 'assistant-center-durations' : 'assistant-animation-durations'}.json`, import.meta.url), `${JSON.stringify(durations, null, 2)}\n`);
 console.log(durations);

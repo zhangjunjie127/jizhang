@@ -4,6 +4,7 @@ import { habitReminders } from '../shared/planner.mjs';
 import { withReminderChannel } from './reminder-notifications.mjs';
 import { taskReminderOccurrences } from '../shared/task-reminders.mjs';
 import { courseReminders } from '../shared/courses.mjs';
+import { healthReminders } from '../shared/health.mjs';
 
 export const isNative = Capacitor.isNativePlatform();
 export function getBase() {
@@ -75,6 +76,7 @@ async function scheduleReminders(records, ask) {
     return;
   }
   const planner = getToken() ? await request('/planner') : { items: [], checks: [] };
+  const health = getToken() ? await request('/health/reminders') : { entries: [] };
   const pending = await LocalNotifications.getPending();
   if (pending.notifications.length) await LocalNotifications.cancel({ notifications: pending.notifications.map(({ id }) => ({ id })) });
   const now = Date.now();
@@ -91,13 +93,18 @@ async function scheduleReminders(records, ask) {
     schedule: { at: new Date(item.at), allowWhileIdle: true },
     extra: { courseId: item.courseId }, smallIcon: 'ic_stat_notify',
   }));
-  if (upcoming.length || habits.length || courses.length) {
+  const followUps = healthReminders(health.entries, now).slice(0, 64).map(item => ({
+    id: notificationId(item.key), title: '在在 · 复诊提醒', body: item.title,
+    schedule: { at: new Date(item.at), allowWhileIdle: true },
+    extra: { healthId: item.healthId }, smallIcon: 'ic_stat_notify',
+  }));
+  if (upcoming.length || habits.length || courses.length || followUps.length) {
     await LocalNotifications.schedule({
       notifications: withReminderChannel([...upcoming.map(({ record, at }) => ({
         id: notificationId(`${record.id}:${at}`), title: '在在 · 到时间了', body: record.payload.title,
         schedule: { at: new Date(at), allowWhileIdle: true },
         extra: { recordId: record.id }, smallIcon: 'ic_stat_notify',
-      })), ...habits, ...courses]),
+      })), ...habits, ...courses, ...followUps]),
     });
   }
 }
