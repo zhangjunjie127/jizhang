@@ -17,6 +17,11 @@
 @keyframes assistant-smoke-clear{from{opacity:1}to{opacity:1}}
 @media(prefers-reduced-motion:reduce){.assistant-smoke,.assistant-smoke>span{animation-duration:100ms}}
 .assistant-edge i{position:absolute;left:5px;top:7px;width:7px;height:7px;background:#f57a69;border:1px solid white;border-radius:50%}
+.assistant-greeting{position:fixed;z-index:40;width:min(260px,calc(100vw - 80px));display:flex;align-items:center;gap:4px;padding:10px 4px 10px 12px;background:#fafdff;border:1px solid #bfd3e1;border-radius:8px;box-shadow:0 4px 16px #23364524;animation:assistant-greeting-in .18s ease-out}
+.assistant-greeting-text{flex:1;min-width:0;padding:0;background:none;border:0;text-align:left;font-size:14px;line-height:1.6;color:#233645;overflow-wrap:anywhere}
+.assistant-greeting-dismiss{display:grid;place-items:center;flex:0 0 40px;width:40px;height:44px;padding:0;background:none;border:0;color:#5a6c77}
+@keyframes assistant-greeting-in{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+@media(prefers-reduced-motion:reduce){.assistant-greeting{animation:none}}
 .assistant-edge.dock-left i{left:auto;right:5px}
 .assistant-backdrop{position:fixed;inset:0;z-index:38;background:rgba(229,237,245,.56);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);animation:assistant-frost-in .2s ease-out}
 @keyframes assistant-frost-in{from{opacity:0}to{opacity:1}}
@@ -30,9 +35,9 @@
 .assistant-panel .chat-heading .icon-button:hover{background:#ffffff30}
 .assistant-panel .chat-heading>.avatar{width:30px;height:30px;flex-shrink:0}
 .assistant-panel .chat-heading>div{min-width:0}
-.assistant-panel .chat-heading strong{font-size:13px}
-.assistant-panel .chat-heading small{font-size:10px}
-.assistant-panel .chat-heading .icon-button{width:36px;height:36px;flex-shrink:0}
+.assistant-panel .chat-heading strong{font-size:14px}
+.assistant-panel .chat-heading small{font-size:12px}
+.assistant-panel .chat-heading .icon-button{width:44px;height:44px;flex-shrink:0}
 .assistant-panel .messages{padding:14px 10px;overscroll-behavior:contain;background:#dce7ef;scrollbar-color:#91a8b9 transparent}
 .assistant-panel .message .bubble{background:#fff;color:#293740;border:1px solid #d5dfe5}
 .assistant-panel .message.user .bubble{background:#d2e7fa;color:#163f61;border-color:#b4d2ed}
@@ -45,11 +50,14 @@
 .assistant-panel .chat-welcome h2{font-size:18px}
 .assistant-panel .chat-welcome p{margin:8px 0}
 .assistant-panel .suggestions{margin-top:12px}
+.assistant-panel .suggestions button{font-size:13px;min-height:44px;color:#405a6b;background:#f5f9fc;border-color:#bfd0dc}
+.assistant-panel .suggestions button:hover{background:#fff}
+.assistant-panel .chat-welcome p{color:#526979;font-size:13px}
 .assistant-panel .composer{flex-shrink:0;padding:8px;gap:4px;border-top:1px solid #b7c9d7;background:#f5f9fc}
 .assistant-panel .composer textarea{min-width:0;font-size:14px;background:#edf2f6;border:1px solid #c6d4df}
 .assistant-panel .composer textarea::placeholder{color:#657888}
 .assistant-panel .composer>.icon-button:not(.send-button){color:#46677f}
-.assistant-panel .composer .icon-button{width:36px;height:40px;flex-shrink:0}
+.assistant-panel .composer .icon-button{width:44px;height:44px;flex-shrink:0}
 .assistant-panel .pending-chat{flex-shrink:0;margin:0;padding:8px;font-size:12px}
 .assistant-call-controls{display:flex;align-items:center;gap:8px;flex-shrink:0;padding:6px 10px;background:#f0faf5;border-top:1px solid #dfede4}
 .assistant-call-controls>span{flex:1;min-width:0;font-size:12px;color:#176c49}

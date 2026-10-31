@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Camera, ChevronRight, ImagePlus, LoaderCircle, LogOut } from 'lucide-react';
-import { request } from './api';
+import { Camera, ChevronRight, Download, ImagePlus, LoaderCircle, LogOut } from 'lucide-react';
+import { exportAccountData, request } from './api';
 import { UserAvatar } from './user-avatar';
 import { AccountDeletion } from './account-deletion';
 import { PasswordForm } from './account-services';
@@ -147,6 +147,19 @@ export function AccountSettings({ Modal, user, onClose, onSaved, onLogout, onPas
         </section>
         <section className="account-settings-group" aria-label="账号注销">
           <button className="account-settings-row" onClick={() => edit('deletion')}><span>申请注销</span><span className="account-settings-value">需管理员审核</span><ChevronRight size={18} /></button>
+        </section>
+        <section className="account-settings-group account-data-export" aria-label="个人数据">
+          <div className="account-export-copy"><strong>个人数据</strong><p>导出账号资料、记录、健康档案、照片和聊天记录。文件含敏感信息，请妥善保管。</p></div>
+          <button className="secondary" disabled={busy} onClick={async () => {
+            if (busy) return;
+            setBusy(true); setError('');
+            try {
+              const saved = await exportAccountData();
+              setSaved(saved ? '个人数据文件已保存' : '已取消导出');
+            } catch (err) { setError(err.message); }
+            finally { setBusy(false); }
+          }}><Download size={17} />{busy ? '正在准备' : '导出个人数据'}</button>
+          {error && <p className="error-box" role="alert">{error}</p>}
         </section>
         {saved && <p className="account-settings-saved" role="status">{saved}</p>}
         <button className="account-logout" onClick={() => edit('logout')}><LogOut size={18} />退出登录</button>

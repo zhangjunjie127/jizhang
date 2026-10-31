@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { taskReminderOccurrences } from '../shared/task-reminders.mjs';
+import { greetingCandidate, recentGreetings, repeatsGreeting } from './greetings.mjs';
 
 const HOUR = 3600000;
 export const localDay = value => new Date(value).toLocaleDateString('en-CA', { timeZone: 'Asia/Shanghai' });
@@ -7,7 +8,7 @@ const localHour = value => Number(new Intl.DateTimeFormat('en-GB', {
   hour: '2-digit', hourCycle: 'h23', timeZone: 'Asia/Shanghai',
 }).format(new Date(value)));
 
-export function mayCheckIn(state, attempts, now) {
+export function mayCheckIn(state, attempts, now, { greeting = false } = {}) {
   const { user, messages } = state;
   if (!user.proactive || Date.parse(user.quiet_until) > now || localHour(now) < 8 || localHour(now) >= 21) return false;
   const sent = attempts.filter(item => item.status === 'sent');
@@ -18,7 +19,8 @@ export function mayCheckIn(state, attempts, now) {
   const lastMessage = messages.at(-1);
   if (lastMessage && now - Date.parse(lastMessage.created) < HOUR) return false;
   // An unanswered proactive message is not an invitation to keep nudging.
-  if (lastSent && !messages.some(item => item.role === 'user' && Date.parse(item.created) > Date.parse(lastSent.created))) return false;
+  if (lastSent && !messages.some(item => item.role === 'user' && Date.parse(item.created) > Date.parse(lastSent.created))
+    && (!greeting || localDay(lastSent.created) === localDay(now))) return false;
   if (attempts.some(item => now - Date.parse(item.created) < HOUR / 2)) return false;
   return attempts.filter(item => localDay(item.created) === localDay(now)).length < 12;
 }
@@ -83,29 +85,40 @@ export function createCheckInRunner({ db, snapshot, generate, appendMessage, isB
   CREATE INDEX IF NOT EXISTS checkins_message ON checkins(message_id);`);
   const inFlight = new Set();
   const history = id => db.prepare('SELECT * FROM checkins WHERE user_id=? ORDER BY created,id').all(id);
-  return async function checkin(user) {
+  return async function checkin(user, { greeting = false } = {}) {
     if (inFlight.has(user.id) || isBusy(user.id)) return;
     user = db.prepare('SELECT * FROM users WHERE id=?').get(user.id);
     if (!user) return;
     const state = snapshot(user);
     const attempts = history(user.id);
-    if (!mayCheckIn(state, attempts, now())) return;
-    const candidates = checkInCandidates(state, attempts, now());
+    if (!mayCheckIn(state, attempts, now(), { greeting })) return;
+    const candidates = greeting ? [greetingCandidate(user.id, attempts, now())].filter(Boolean)
+      : checkInCandidates(state, attempts, now());
     if (!candidates.length) return;
     const id = randomUUID();
     db.prepare('INSERT INTO checkins (id,user_id,status,created) VALUES (?,?,?,?)')
       .run(id, user.id, 'pending', new Date(now()).toISOString());
     inFlight.add(user.id);
     try {
-      const decision = parseCheckIn(await generate(user, state, candidates), candidates);
+      const previousGreetings = greeting ? recentGreetings(state.messages, attempts) : [];
+      let decision;
+      // At most one regeneration for a near duplicate. Failure never falls back to canned text.
+      for (let attempt = 0; attempt < (greeting ? 2 : 1); attempt++) {
+        decision = parseCheckIn(await generate(user, state, candidates, { greeting, previousGreetings }), candidates);
+        if (!greeting || !decision || (decision.text.length <= 80 && !repeatsGreeting(decision.text, previousGreetings))) break;
+        previousGreetings.push({ text: decision.text });
+        decision = null;
+      }
       const latestUser = db.prepare('SELECT * FROM users WHERE id=?').get(user.id);
       const latest = latestUser && snapshot(latestUser);
       const logs = history(user.id).filter(item => item.id !== id);
       // Re-check after the model returns: the user may have replied, edited a record or started a call.
       const unchanged = latest && JSON.stringify([state.messages, state.records, state.memories, state.user])
         === JSON.stringify([latest.messages, latest.records, latest.memories, latest.user]);
-      if (!decision || isBusy(user.id) || !unchanged || !mayCheckIn(latest, logs, now())
-        || !checkInCandidates(latest, logs, now()).some(item => item.id === decision.topic)) {
+      const latestCandidates = latest && (greeting ? [greetingCandidate(user.id, logs, now())].filter(Boolean)
+        : checkInCandidates(latest, logs, now()));
+      if (!decision || isBusy(user.id) || !unchanged || !mayCheckIn(latest, logs, now(), { greeting })
+        || !latestCandidates.some(item => item.id === decision.topic)) {
         db.prepare("UPDATE checkins SET status='skipped' WHERE id=?").run(id);
         return;
       }
@@ -117,6 +130,7 @@ export function createCheckInRunner({ db, snapshot, generate, appendMessage, isB
           .run(decision.topic, message.id, created, id);
         db.prepare('UPDATE users SET last_checkin=? WHERE id=?').run(created, user.id);
         db.exec('COMMIT');
+        return message;
       } catch (error) { db.exec('ROLLBACK'); throw error; }
     } catch (error) {
       db.prepare("UPDATE checkins SET status='failed' WHERE id=?").run(id);

@@ -1,0 +1,1342 @@
+:root {
+  --visual-ground: #f4f7fa;
+  --visual-surface: #ffffff;
+  --visual-ink: #202b35;
+  --visual-muted: #657482;
+  --visual-line: #e4eaf0;
+  --visual-accent: var(--brand-strong, #006bd6);
+}
+
+body,
+.app-shell,
+.workspace {
+  color: var(--visual-ink);
+}
+
+.sidebar {
+  border-color: var(--visual-line);
+}
+
+.sidebar nav button,
+.mobile-nav > button {
+  transition: background-color 160ms ease, color 160ms ease, transform 160ms ease;
+}
+
+.sidebar nav button.active {
+  border-radius: 8px;
+}
+
+.sidebar nav button:active,
+.mobile-nav > button:active {
+  transform: scale(.97);
+}
+
+.topbar {
+  color: var(--visual-muted);
+  border-color: var(--visual-line);
+}
+
+.ledger-page > .page-heading,
+.ledger-head,
+.health-page > .page-heading,
+.mine-page-heading,
+.mine-hero {
+  background: color-mix(in srgb, var(--brand-soft, #eaf4ff) 70%, white);
+}
+
+.ledger-head {
+  border-radius: 0 0 8px 8px;
+}
+
+.ledger .ledger-summary strong,
+.mine-statistics strong {
+  color: var(--visual-ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.ledger .ledger-summary span,
+.mine-statistics span {
+  color: var(--visual-muted);
+}
+
+.view-tabs > button,
+.ledger-section-tabs > button,
+.health-tabs > button {
+  transition: color 150ms ease, border-color 150ms ease;
+}
+
+.ledger .ledger-day-heading,
+.task-date-heading {
+  background: #f5f7f9;
+  color: var(--visual-muted);
+}
+
+.ledger .ledger-row,
+.task-row,
+.planner-task {
+  transition: background-color 140ms ease;
+}
+
+.ledger .ledger-row:hover,
+.task-row:hover,
+.planner-task:hover {
+  background: #f8fafc;
+}
+
+.mobile-nav {
+  border-top: 1px solid var(--visual-line);
+  box-shadow: 0 -4px 18px #1c31440a;
+}
+
+.mobile-nav > button.active > svg {
+  background: color-mix(in srgb, var(--brand-soft, #eaf4ff) 78%, white);
+}
+
+.mobile-nav > .nav-create {
+  border-color: #fff;
+  box-shadow: 0 5px 16px color-mix(in srgb, var(--brand-strong, #006bd6) 23%, transparent);
+}
+
+.health-dashboard,
+.mine-home {
+  background: var(--visual-ground);
+}
+
+.health-top-search > button:not(.icon-button) {
+  background: #e9eef3;
+  color: var(--visual-muted);
+}
+
+.health-sync-entry {
+  color: var(--visual-ink);
+}
+
+.health-weight-band {
+  background: color-mix(in srgb, var(--brand-soft, #eaf4ff) 66%, white);
+  border-radius: 8px;
+}
+
+.health-weight-band progress {
+  accent-color: var(--visual-accent);
+}
+
+.health-tile-grid {
+  gap: 10px;
+}
+
+.health-tile {
+  min-height: 136px;
+  border-color: var(--visual-line);
+  border-radius: 8px;
+  padding: 15px;
+  transition: border-color 150ms ease, background-color 150ms ease, transform 150ms ease;
+}
+
+.health-tile:hover {
+  border-color: color-mix(in srgb, var(--visual-accent) 38%, white);
+}
+
+.health-tile:active {
+  transform: scale(.985);
+}
+
+.health-tile-art {
+  width: 48px;
+  height: 48px;
+  right: 12px;
+  bottom: 12px;
+  opacity: .85;
+}
+
+.health-tile > small,
+.health-record small,
+.health-food-search small {
+  color: var(--visual-muted);
+}
+
+.health-energy {
+  background: #f6f8fa;
+  border-radius: 8px;
+}
+
+.health-ring > div {
+  background: #f6f8fa;
+}
+
+.health-section {
+  border-color: var(--visual-line);
+}
+
+.health-record {
+  border-color: #e9eef2;
+}
+
+.health-search:focus-within {
+  outline-color: var(--visual-accent);
+}
+
+.mine-menu {
+  border-radius: 8px;
+}
+
+.mine-menu-row {
+  min-height: 60px;
+  border-color: var(--visual-line);
+}
+
+.mine-menu-row > svg:first-child {
+  color: var(--visual-accent);
+}
+
+.mine-menu-row:hover,
+.mine-menu-row:focus-visible,
+.mine-menu-row:active {
+  background: color-mix(in srgb, var(--brand-soft, #eaf4ff) 52%, white);
+}
+
+.planner-heading {
+  background: color-mix(in srgb, var(--brand-soft, #eaf4ff) 65%, white);
+}
+
+.planner-status > button[aria-pressed="true"] {
+  color: var(--visual-accent);
+}
+
+.planner-calendar-weekdays {
+  color: var(--visual-muted);
+  border-color: var(--visual-line);
+}
+
+.planner-calendar-weekdays > span:first-child,
+.planner-calendar-weekdays > span:last-child {
+  color: #788695;
+}
+
+.planner-month-cell {
+  border-color: #edf1f4;
+}
+
+.planner-month-cell.outside {
+  background: #f7f8fa;
+}
+
+.planner-month-cell.is-today {
+  background: color-mix(in srgb, var(--brand-soft, #eaf4ff) 45%, white);
+}
+
+.planner-month-cell.selected {
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--visual-accent) 46%, transparent);
+}
+
+.planner-cell-date {
+  min-height: 30px;
+}
+
+.planner-day-number[aria-current="date"]::before {
+  background: var(--visual-accent);
+}
+
+.planner-lunar-label {
+  color: #798692;
+}
+
+.planner-holiday-badge {
+  background: #4f9a70;
+}
+
+.planner-holiday-badge.work {
+  background: #c76e79;
+}
+
+.planner-cell-more {
+  width: 24px;
+  height: 24px;
+  border-radius: 5px;
+}
+
+.planner-cell-more::before {
+  inset: auto 5px 5px auto;
+  width: 4px;
+  height: 4px;
+  clip-path: none;
+  border-radius: 50%;
+  background: #c4cfd8;
+  content: "";
+}
+
+.planner-cell-more:hover {
+  background: #edf2f6;
+}
+
+.planner-cell-more:hover::before {
+  filter: none;
+}
+
+.planner-day-preview:not(.fullscreen-modal) > .modal-heading,
+.planner-day-preview > .modal-actions {
+  border-color: var(--visual-line);
+}
+
+.assistant-panel .messages {
+  background: #e4edf4;
+}
+
+.assistant-panel .chat-welcome {
+  color: #263b4b;
+}
+
+.assistant-panel .composer {
+  border-color: #c7d6e1;
+}
+
+@media (max-width: 760px) {
+  .health-dashboard {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+
+  .health-tile-grid {
+    gap: 9px;
+  }
+
+  .health-tile {
+    min-height: 130px;
+    padding: 13px;
+  }
+
+  .planner-heading {
+    height: 60px;
+  }
+
+  .planner-month-cell {
+    padding: 3px;
+  }
+
+  .planner-cell-date {
+    min-height: 22px;
+  }
+}
+
+/* Small, physical feedback on controls; GSAP handles larger state changes. */
+.primary:not(:disabled),
+.secondary:not(:disabled),
+.icon-button:not(:disabled),
+.planner-check:not(:disabled),
+.planner-cell-date,
+.health-home .health-tile,
+.mine-menu-row,
+.assistant-panel .suggestions button,
+.assistant-panel .composer .icon-button {
+  transition: scale 140ms ease, background-color 160ms ease, color 160ms ease, box-shadow 160ms ease;
+}
+
+.primary:active:not(:disabled),
+.secondary:active:not(:disabled),
+.icon-button:active:not(:disabled),
+.planner-check:active:not(:disabled),
+.planner-cell-date:active,
+.health-home .health-tile:active,
+.mine-menu-row:active,
+.assistant-panel .suggestions button:active,
+.assistant-panel .composer .icon-button:active:not(:disabled) {
+  scale: .97;
+}
+
+.modal-backdrop {
+  animation: motion-scrim-in 180ms ease-out both;
+}
+
+.modal:not(.fullscreen-modal) {
+  animation: motion-sheet-in 240ms cubic-bezier(.2, .75, .25, 1) both;
+}
+
+.modal.fullscreen-modal {
+  animation: motion-fullscreen-in 220ms ease-out both;
+}
+
+.assistant-panel .message {
+  animation: motion-message-in 220ms ease-out both;
+}
+
+@keyframes motion-scrim-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes motion-sheet-in {
+  from { opacity: 0; transform: translateY(10px) scale(.99); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes motion-fullscreen-in {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes motion-message-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .primary,
+  .secondary,
+  .icon-button,
+  .planner-check,
+  .planner-cell-date,
+  .health-home .health-tile,
+  .mine-menu-row,
+  .assistant-panel .suggestions button,
+  .assistant-panel .composer .icon-button,
+  .modal-backdrop,
+  .modal,
+  .assistant-panel .message {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sidebar nav button,
+  .mobile-nav > button,
+  .health-tile,
+  .ledger .ledger-row,
+  .task-row,
+  .planner-task {
+    transition: none;
+  }
+}
+
+/* Content-first layouts: reserve brand colour for state and data, not whole headers. */
+.ledger-page > .page-heading,
+.planner-heading,
+.mine-page-heading {
+  min-height: 64px;
+  color: var(--visual-ink);
+  background: transparent;
+  border-bottom: 1px solid var(--visual-line);
+}
+
+.ledger-page > .page-heading {
+  margin-bottom: 0;
+}
+
+.ledger-page > .page-heading .primary {
+  color: #fff;
+  background: var(--brand-strong);
+}
+
+.ledger .ledger-overview {
+  display: grid;
+  grid-template-columns: minmax(150px, .8fr) minmax(0, 1.2fr);
+  grid-template-rows: auto 1fr;
+  align-items: center;
+  gap: 10px 28px;
+  height: auto;
+  min-height: 152px;
+  margin: 12px 0 0;
+  padding: 18px 22px;
+  border: 1px solid var(--visual-line);
+  border-left: 4px solid var(--brand-strong);
+  border-radius: 6px;
+  background: var(--visual-surface);
+  color: var(--visual-ink);
+}
+
+.ledger .ledger-overview .ledger-toolbar {
+  grid-column: 1 / -1;
+  color: var(--visual-muted);
+}
+
+.ledger .ledger-overview .ledger-toolbar input,
+.ledger .ledger-overview .ledger-toolbar .text-button,
+.ledger .ledger-overview .ledger-toolbar .icon-button,
+.ledger .ledger-overview .ledger-summary span,
+.ledger .ledger-overview .ledger-summary strong {
+  color: inherit;
+}
+
+.ledger .ledger-overview .ledger-toolbar input {
+  border-color: var(--visual-line);
+}
+
+.ledger .ledger-overview .ledger-summary {
+  grid-column: 1 / -1;
+  width: 100%;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) repeat(2, minmax(100px, .55fr));
+  grid-template-rows: auto;
+  align-items: end;
+  gap: 16px;
+  height: auto;
+  padding: 0;
+}
+
+.ledger .ledger-overview .ledger-summary > div {
+  min-width: 0;
+  padding: 0 0 0 16px;
+  border-left: 1px solid var(--visual-line);
+}
+
+.ledger .ledger-overview .ledger-summary > div:first-child {
+  padding-left: 0;
+  border-left: 0;
+}
+
+.ledger .ledger-overview .ledger-summary .summary-expense > strong {
+  font-size: clamp(28px, 4vw, 38px);
+}
+
+.ledger .ledger-overview .ledger-summary .summary-income,
+.ledger .ledger-overview .ledger-summary .summary-average {
+  display: grid;
+  justify-content: start;
+  gap: 4px;
+  text-align: left;
+}
+
+.ledger .ledger-overview .ledger-summary .summary-income > strong,
+.ledger .ledger-overview .ledger-summary .summary-average > strong {
+  font-size: 20px;
+}
+
+.ledger .ledger-overview .ledger-summary span {
+  color: var(--visual-muted);
+  font-size: 12px;
+}
+
+.ledger .ledger-filters,
+.ledger .ledger-filter-row {
+  border-bottom-color: var(--visual-line);
+}
+
+.planner-heading {
+  flex: 0 0 58px;
+  height: 58px;
+  padding: 0 18px;
+}
+
+.planner-views {
+  margin-inline: 18px;
+}
+
+.planner-views > button {
+  position: relative;
+  border-bottom-width: 2px;
+}
+
+.planner-toolbar {
+  min-height: 50px;
+  margin: 6px 12px 0;
+  padding: 4px 10px;
+  border: 1px solid var(--visual-line);
+  border-radius: 6px;
+  background: #fff;
+}
+
+.planner-month-board {
+  margin: 8px 12px 12px;
+  padding: 0 8px 8px;
+  border: 1px solid var(--visual-line);
+  border-radius: 7px;
+  background: #fff;
+}
+
+.planner-calendar-weekdays {
+  background: transparent;
+}
+
+.planner-month-grid {
+  gap: 3px;
+  height: calc(100% - 31px);
+}
+
+.planner-month-cell {
+  border: 0;
+  border-radius: 5px;
+  padding: 3px;
+  background: #f8fafb;
+}
+
+.planner-month-cell:nth-child(7n + 1),
+.planner-month-cell:nth-child(7n) {
+  background: #f4f7f8;
+}
+
+.planner-month-cell.outside {
+  background: #fbfcfd;
+}
+
+.planner-month-cell.is-today {
+  background: color-mix(in srgb, var(--brand-soft, #eaf4ff) 55%, white);
+}
+
+.planner-month-cell.selected {
+  background: color-mix(in srgb, var(--brand-soft, #eaf4ff) 72%, white);
+  box-shadow: inset 0 0 0 1px var(--brand-strong);
+}
+
+.planner-cell-footer {
+  min-height: 18px;
+}
+
+.planner-cell-more {
+  width: 20px;
+  height: 20px;
+}
+
+.health-home .health-fixed-header {
+  margin-bottom: 14px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--visual-line);
+  background: var(--visual-ground);
+  color: var(--visual-ink);
+}
+
+.health-home .health-fixed-header > .health-sync-entry {
+  width: auto;
+  min-height: 38px;
+  margin-top: 8px;
+  padding: 0 2px;
+  border: 0;
+  background: transparent;
+  color: var(--visual-muted);
+}
+
+.health-home .health-weight-band {
+  display: grid;
+  grid-template-columns: minmax(110px, .65fr) minmax(0, 1.35fr);
+  align-items: center;
+  column-gap: 22px;
+  padding: 18px 20px;
+  margin: 8px 0 16px;
+  border: 1px solid #cde5dc;
+  border-radius: 7px;
+  background: #e8f4ef;
+}
+
+.health-home .health-weight-band .health-section-heading {
+  grid-column: 1;
+  align-self: end;
+  margin: 0;
+}
+
+.health-home .health-weight-band progress {
+  grid-column: 1;
+  margin: 8px 0;
+}
+
+.health-home .health-band-values {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  gap: 12px;
+  text-align: left;
+}
+
+.health-home .health-band-values > div {
+  gap: 3px;
+  padding-left: 12px;
+  border-left: 1px solid #c6ddd4;
+}
+
+.health-home .health-band-values > div:first-child {
+  padding-left: 0;
+  border-left: 0;
+}
+
+.health-home .health-food-overview {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 0 20px;
+  padding: 12px 0 14px;
+  margin-bottom: 10px;
+  border-bottom: 1px solid var(--visual-line);
+}
+
+.health-home .health-food-overview > .health-section-heading {
+  grid-column: 1 / -1;
+}
+
+.health-home .health-food-summary {
+  min-width: 0;
+}
+
+.health-home .health-food-summary > div:first-child {
+  display: grid;
+  gap: 0;
+}
+
+.health-home .health-food-summary strong {
+  font-size: 28px;
+  line-height: 1.2;
+  font-variant-numeric: tabular-nums;
+}
+
+.health-home .health-meal-markers {
+  gap: 8px;
+}
+
+.health-home .health-tile-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.health-home .health-tile {
+  min-height: 132px;
+  padding: 14px;
+  border: 1px solid var(--visual-line);
+  border-top: 2px solid var(--tile-accent, #3d9278);
+  border-radius: 6px;
+  box-shadow: none;
+}
+
+.mine-home {
+  background: var(--visual-ground);
+}
+
+.mine-page-heading {
+  padding-top: 0;
+}
+
+.mine-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(240px, .8fr);
+  align-items: center;
+  gap: 8px 28px;
+  margin: 0;
+  padding: 16px 24px 20px;
+  border-bottom: 1px solid var(--visual-line);
+  background: var(--visual-surface);
+  color: var(--visual-ink);
+}
+
+.mine-identity {
+  min-width: 0;
+  padding: 4px 0;
+}
+
+.mine-statistics {
+  grid-column: 2;
+  grid-row: 1;
+  gap: 0;
+  text-align: left;
+}
+
+.mine-statistics > div {
+  padding-left: 14px;
+  border-left: 1px solid var(--visual-line);
+}
+
+.mine-statistics > div:first-child {
+  padding-left: 0;
+  border-left: 0;
+}
+
+.mine-identity p,
+.mine-account-id,
+.mine-statistics span {
+  color: var(--visual-muted);
+}
+
+.mine-statistics strong {
+  color: var(--visual-ink);
+  font-size: 24px;
+}
+
+.mine-avatar {
+  border: 1px solid var(--visual-line);
+  background: color-mix(in srgb, var(--brand-soft, #eaf4ff) 45%, white);
+}
+
+.mine-menu-scroll {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-content: start;
+  align-items: start;
+  gap: 12px;
+  padding: 14px 18px 28px;
+}
+
+.mine-menu {
+  min-width: 0;
+  margin: 0;
+  padding: 0 14px;
+  border: 1px solid var(--visual-line);
+  border-radius: 6px;
+  background: var(--visual-surface);
+  box-shadow: none;
+}
+
+.mine-menu-row {
+  min-height: 54px;
+}
+
+.mine-menu-row > svg:first-child {
+  color: var(--visual-muted);
+}
+
+.mine-version {
+  grid-column: 1 / -1;
+}
+
+.assistant-panel .messages {
+  background: #e3edf3;
+}
+
+@media (max-width: 760px) {
+  .ledger-page > .page-heading,
+  .planner-heading,
+  .mine-page-heading {
+    min-height: calc(58px + env(safe-area-inset-top));
+  }
+
+  .ledger .ledger-overview {
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 8px 12px;
+    min-height: 128px;
+    margin-top: 8px;
+    padding: 12px 14px;
+  }
+
+  .ledger .ledger-overview .ledger-summary {
+    grid-template-columns: minmax(0, 1fr) repeat(2, minmax(0, .8fr));
+    gap: 8px;
+  }
+
+  .ledger .ledger-overview .ledger-summary > div {
+    padding-left: 8px;
+  }
+
+  .ledger .ledger-overview .ledger-summary .summary-expense > strong {
+    font-size: 30px;
+  }
+
+  .ledger .ledger-overview .ledger-summary .summary-income > strong,
+  .ledger .ledger-overview .ledger-summary .summary-average > strong {
+    font-size: 15px;
+  }
+
+  .ledger .ledger-overview .ledger-summary span {
+    font-size: 10px;
+  }
+
+  .planner-heading {
+    height: calc(58px + env(safe-area-inset-top));
+    padding: env(safe-area-inset-top) 18px 0;
+  }
+
+  .planner-toolbar {
+    margin: 4px 8px 0;
+    min-height: 46px;
+    padding-inline: 6px;
+  }
+
+  .planner-month-board {
+    margin: 6px 8px 8px;
+    padding: 0 4px 4px;
+  }
+
+  .planner-month-grid {
+    gap: 2px;
+    height: calc(100% - 30px);
+  }
+
+  .planner-month-cell {
+    padding: 2px;
+  }
+
+  .planner-cell-footer {
+    min-height: 12px;
+  }
+
+  .health-home .health-weight-band {
+    grid-template-columns: minmax(0, 1fr);
+    row-gap: 8px;
+    padding: 14px;
+  }
+
+  .health-home .health-weight-band .health-section-heading,
+  .health-home .health-weight-band progress,
+  .health-home .health-band-values {
+    grid-column: 1;
+    grid-row: auto;
+  }
+
+  .health-home .health-band-values {
+    gap: 4px;
+  }
+
+  .health-home .health-band-values > div {
+    padding-left: 8px;
+  }
+
+  .health-home .health-tile-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .health-home .health-tile {
+    min-height: 126px;
+    padding: 12px;
+  }
+
+  .mine-page-heading {
+    height: calc(58px + env(safe-area-inset-top));
+    padding: env(safe-area-inset-top) 18px 0;
+  }
+
+  .mine-hero {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 8px;
+    padding: 10px 16px 14px;
+  }
+
+  .mine-identity {
+    padding: 4px 0 8px;
+  }
+
+  .mine-statistics {
+    grid-column: 1;
+    grid-row: auto;
+    text-align: center;
+  }
+
+  .mine-statistics > div {
+    padding-left: 6px;
+  }
+
+  .mine-statistics strong {
+    font-size: 21px;
+  }
+
+  .mine-menu-scroll {
+    display: block;
+    padding: 10px 12px 24px;
+  }
+
+  .mine-menu {
+    margin-bottom: 10px;
+    padding-inline: 12px;
+  }
+
+  .mine-menu-row {
+    min-height: 50px;
+  }
+}
+
+@media (max-width: 360px) {
+  .ledger .ledger-overview .ledger-summary {
+    grid-template-columns: minmax(0, 1fr) repeat(2, minmax(0, .7fr));
+    gap: 6px;
+  }
+
+  .ledger .ledger-overview .ledger-summary .summary-expense > strong {
+    font-size: 27px;
+  }
+
+  .health-home .health-tile {
+    min-height: 118px;
+    padding: 10px;
+  }
+}
+
+@media (min-width: 761px) {
+  .health-dashboard,
+  .ledger-page {
+    max-width: 1080px;
+    margin-inline: auto;
+  }
+
+  .mine-home {
+    max-width: 920px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mine-menu-row,
+  .health-tile,
+  .planner-month-cell {
+    transition: none;
+  }
+}
+
+/* Make each tool's first-screen purpose visible at a glance. */
+:root {
+  --visual-ground: #eff3f6;
+}
+
+.ledger-page > .page-heading {
+  background: var(--brand-strong);
+  color: #fff;
+}
+
+.ledger-page > .page-heading .primary {
+  color: var(--brand-strong);
+  background: #fff;
+}
+
+.ledger-page > .page-heading .primary:hover {
+  background: #edf5ff;
+}
+
+.ledger .ledger-overview {
+  background: var(--brand-strong);
+  color: #fff;
+  border-radius: 0 0 12px 12px;
+}
+
+.ledger .ledger-overview .ledger-toolbar,
+.ledger .ledger-overview .ledger-toolbar input,
+.ledger .ledger-overview .ledger-toolbar .text-button,
+.ledger .ledger-overview .ledger-toolbar .icon-button,
+.ledger .ledger-overview .ledger-summary span,
+.ledger .ledger-overview .ledger-summary strong {
+  color: #fff;
+}
+
+.ledger .ledger-overview .ledger-toolbar input {
+  border-color: #ffffff80;
+}
+
+.ledger .ledger-overview .ledger-toolbar > span,
+.ledger .ledger-overview .ledger-toolbar > small {
+  color: #ffffffd9;
+}
+
+.ledger .ledger-overview .ledger-toolbar .icon-button:hover {
+  background: #ffffff20;
+}
+
+.ledger .ledger-overview .ledger-summary > div {
+  border-color: #ffffff45;
+}
+
+.planner-heading {
+  background: var(--brand-strong);
+  color: #fff;
+}
+
+.planner-heading .planner-icon,
+.planner-heading .planner-icon:hover,
+.planner-heading .planner-month-trigger {
+  color: #fff;
+}
+
+.planner-heading .planner-icon:hover {
+  background: #ffffff1c;
+}
+
+.planner-status {
+  background: #f7f9fb;
+}
+
+.planner-calendar-weekdays {
+  height: 34px;
+  background: #f7f9fb;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.planner-month-cell.is-today .planner-cell-date {
+  color: var(--brand-strong);
+  font-weight: 700;
+}
+
+.planner-month-cell.selected {
+  background-color: color-mix(in srgb, var(--brand-soft) 62%, white);
+  box-shadow: inset 0 0 0 2px var(--brand-strong);
+}
+
+.planner-cell-more::before {
+  background: #d6dee5;
+}
+
+.health-home .health-fixed-header {
+  margin: -20px -16px 14px;
+  padding: 12px 16px 8px;
+  background: #187b63;
+  color: #fff;
+}
+
+.health-home .health-top-search {
+  margin: 0;
+}
+
+.health-home .health-top-search > button:not(.icon-button) {
+  background: #ffffffed;
+  color: #435a56;
+}
+
+.health-home .health-top-search > .icon-button {
+  color: #fff;
+}
+
+.health-home .health-sync-entry {
+  width: 100%;
+  min-height: 44px;
+  margin-top: 7px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 6px;
+  background: #d9f0e7;
+  color: #155b4c;
+}
+
+.health-weight-band {
+  background: #d9f0e7;
+  padding: 18px;
+}
+
+.health-weight-band h2,
+.health-weight-band strong {
+  color: #155b4c;
+}
+
+.health-tile-grid {
+  gap: 12px;
+}
+
+.health-tile {
+  min-height: 144px;
+  border-width: 0;
+  border-left: 4px solid var(--tile-accent, #3d9278);
+  background: #fff;
+  box-shadow: 0 2px 8px #1a34420c;
+}
+
+.health-tile.weight { --tile-accent: #32866d; }
+.health-tile.water { --tile-accent: #3e91bd; }
+.health-tile.period { --tile-accent: #cf6687; }
+.health-tile.bowel { --tile-accent: #cf9b42; }
+.health-tile.sleep { --tile-accent: #687dc1; }
+.health-tile.medical,
+.health-tile.checkup,
+.health-tile.visit { --tile-accent: #4d7ea8; }
+
+.health-tile > strong {
+  font-size: 16px;
+}
+
+.health-tile p {
+  padding-top: 10px;
+}
+
+.health-tile-art {
+  width: 54px;
+  height: 54px;
+  opacity: .55;
+}
+
+.mine-page-heading,
+.mine-hero {
+  background: var(--brand-strong);
+  color: #fff;
+}
+
+.mine-page-heading .mine-messages-entry,
+.mine-page-heading .mine-messages-entry:hover {
+  color: #fff;
+}
+
+.mine-hero {
+  padding-bottom: 26px;
+  margin-bottom: 14px;
+}
+
+.mine-identity p,
+.mine-account-id,
+.mine-statistics span {
+  color: #ffffffc9;
+}
+
+.mine-statistics strong {
+  color: #fff;
+  font-size: 28px;
+}
+
+.mine-avatar {
+  border-color: #ffffffb5;
+  color: var(--brand-strong);
+}
+
+.mine-menu {
+  box-shadow: 0 2px 10px #1a34420c;
+}
+
+.mobile-nav > .nav-create {
+  width: 58px;
+  height: 58px;
+  min-width: 58px;
+  border: 4px solid var(--visual-ground);
+  box-shadow: 0 7px 20px color-mix(in srgb, var(--brand-strong) 38%, transparent);
+}
+
+@media (max-width: 760px) {
+  .ledger-page > .page-heading {
+    border-radius: 0;
+  }
+
+  .ledger .ledger-overview {
+    border-radius: 0 0 12px 12px;
+  }
+
+  .health-home .health-fixed-header {
+    margin-left: -16px;
+    margin-right: -16px;
+    padding-top: calc(12px + env(safe-area-inset-top));
+  }
+
+  .health-tile {
+    min-height: 138px;
+  }
+
+  .mine-hero {
+    padding-bottom: 24px;
+  }
+}
+
+/* Final layer wins over the legacy theme overrides above. */
+.ledger-page > .page-heading,
+.planner-heading,
+.mine-page-heading {
+  color: var(--visual-ink);
+  background: transparent;
+  border-bottom: 1px solid var(--visual-line);
+}
+
+.ledger-page > .page-heading .primary {
+  color: #fff;
+  background: var(--brand-strong);
+}
+
+.ledger .ledger-overview {
+  margin: 12px 0 0;
+  border: 1px solid var(--visual-line);
+  border-left: 4px solid var(--brand-strong);
+  border-radius: 6px;
+  background: var(--visual-surface);
+  color: var(--visual-ink);
+}
+
+.ledger .ledger-overview .ledger-toolbar,
+.ledger .ledger-overview .ledger-toolbar input,
+.ledger .ledger-overview .ledger-toolbar .text-button,
+.ledger .ledger-overview .ledger-toolbar .icon-button,
+.ledger .ledger-overview .ledger-summary span,
+.ledger .ledger-overview .ledger-summary strong {
+  color: inherit;
+}
+
+.ledger .ledger-overview .ledger-summary span {
+  color: var(--visual-muted);
+}
+
+.planner-heading {
+  flex: 0 0 58px;
+  height: 58px;
+  padding: 0 18px;
+}
+
+.mine-hero {
+  margin: 0;
+  padding: 16px 24px 20px;
+  border-bottom: 1px solid var(--visual-line);
+  background: var(--visual-surface);
+  color: var(--visual-ink);
+}
+
+.mine-identity p,
+.mine-account-id,
+.mine-statistics span {
+  color: var(--visual-muted);
+}
+
+.mine-statistics strong {
+  color: var(--visual-ink);
+  font-size: 24px;
+}
+
+.mine-avatar {
+  border: 1px solid var(--visual-line);
+  background: color-mix(in srgb, var(--brand-soft, #eaf4ff) 45%, white);
+}
+
+.mine-page-heading .mine-messages-entry,
+.mine-page-heading .mine-messages-entry:hover {
+  color: var(--visual-ink);
+}
+
+.mine-menu {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: 20px;
+}
+
+.mine-menu-row:nth-child(odd) {
+  padding-right: 10px;
+  border-right: 1px solid var(--visual-line);
+}
+
+.mine-menu-row:nth-child(even) {
+  padding-left: 10px;
+}
+
+.mine-menu {
+  box-shadow: none;
+}
+
+@media (max-width: 760px) {
+  .ledger-page > .page-heading,
+  .planner-heading,
+  .mine-page-heading {
+    min-height: calc(58px + env(safe-area-inset-top));
+  }
+
+  .ledger .ledger-overview {
+    min-height: 128px;
+    margin-top: 8px;
+    padding: 12px 14px;
+  }
+
+  .planner-heading {
+    height: calc(58px + env(safe-area-inset-top));
+    padding: env(safe-area-inset-top) 18px 0;
+  }
+
+  .mine-hero {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 8px;
+    padding: 10px 16px 14px;
+  }
+
+  .mine-statistics {
+    grid-column: 1;
+    grid-row: auto;
+    text-align: center;
+  }
+
+  .mine-menu {
+    display: block;
+  }
+
+  .mine-menu-row:nth-child(odd),
+  .mine-menu-row:nth-child(even) {
+    padding-inline: 0;
+    border-right: 0;
+  }
+
+  .health-home .health-tile-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .health-home .health-tile {
+    min-height: 126px;
+    padding: 12px;
+    border: 1px solid var(--visual-line);
+    border-top: 2px solid var(--tile-accent, #3d9278);
+    border-radius: 6px;
+    box-shadow: none;
+  }
+}

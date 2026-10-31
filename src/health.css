@@ -18,7 +18,7 @@
 .health-home .health-food-overview .health-section-heading{margin-bottom:4px}
 .health-home .health-food-summary{min-height:44px}
 .modal.health-editor{padding:16px 18px;max-height:calc(100dvh - 32px);overflow-y:auto}
-.modal.health-editor>.modal-heading{top:-16px;margin:-16px -18px 12px;padding:12px 18px;background:#fff}
+.modal.health-editor:not(.fullscreen-modal)>.modal-heading{top:-16px;margin:-16px -18px 12px;padding:12px 18px;background:#fff}
 .health-editor .health-fields{gap:10px}
 .health-editor .health-fields label{gap:5px}
 .health-editor .health-fields input:not([type=checkbox]),.health-editor .health-fields select{min-height:38px;padding:8px 10px}
@@ -61,9 +61,18 @@
 .health-ongoing{display:flex;align-items:center;gap:10px;padding:16px 0;color:#a86784}.health-ongoing>div{flex:1;display:grid;gap:6px}.health-ongoing span{font-size:12px}
 .health-add-menu{display:grid;gap:5px}.health-add-menu>button{border:0;border-bottom:1px solid #edf1ef;background:transparent;padding:15px 2px;display:flex;align-items:center;gap:12px;text-align:left}.health-add-menu>button>svg:last-child{margin-left:auto}
 .health-editor{max-width:560px}.health-fields{border:0;margin:0;padding:0;min-width:0;display:grid;gap:14px}.health-fields label{margin:0;display:grid;gap:7px;font-size:13px;min-width:0}.health-fields input,.health-fields select,.health-fields textarea{width:100%;min-width:0}.health-editor-tabs{gap:0;justify-content:space-between;margin:0}.health-editor-tabs>button{font-size:13px}
-.health-search{display:flex!important;align-items:center;border:1px solid #dce7e3;border-radius:6px;padding-left:10px}.health-search input{border:0!important;box-shadow:none!important}.health-source{color:#7b8983;font-size:11px}
+.health-search{display:flex!important;flex-direction:row;align-items:center;border:1px solid #c4d2cc;border-radius:6px;padding-left:10px}.health-search:focus-within{outline:2px solid #17806c;outline-offset:2px}.health-search input{border:0!important;box-shadow:none!important}.health-source{color:#5d7167;font-size:12px}
 .health-food-search{max-height:200px;overflow:auto}.health-food-search>button{border:0;border-bottom:1px solid #e8eee9;background:none;display:flex;width:100%;align-items:center;gap:8px;padding:10px 2px;text-align:left}.health-food-search>button>span{flex:1;min-width:0;display:grid;gap:5px}.health-food-search strong{font-size:13px;overflow-wrap:anywhere}.health-food-search small{font-size:11px;color:#78867f}
 .health-food-item{padding:14px 0;border-top:1px solid #dce7e3;display:grid;gap:12px}.health-food-item-heading{display:flex;align-items:center;gap:10px}.health-food-item-heading strong{font-size:13px}.health-food-item-heading small{color:#7b8983;font-size:11px;flex:1}.health-form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.health-form-grid label{font-size:12px}.health-meal-total{display:flex;justify-content:space-between;gap:10px;font-size:14px}
 .health-photo{display:grid;gap:12px}.health-photo>img{width:100%;max-height:230px;object-fit:contain;background:#f1f5f2;border-radius:6px}.health-photo-buttons{display:flex;gap:10px}.health-photo-buttons button{flex:1;justify-content:center}.health-consent{display:flex!important;align-items:flex-start;font-size:12px!important;line-height:1.6;color:#64736b}.health-consent input{width:16px;height:16px;flex-shrink:0;margin-top:3px}
 .health-symptoms{display:flex;flex-wrap:wrap;gap:12px}.health-symptoms>span{width:100%;font-size:13px}.health-symptoms label{display:flex;align-items:center;gap:5px}.health-symptoms input{width:16px;height:16px}
+.health-tile>small,.health-food-summary small,.health-record small,.health-food-search small{font-size:12px;color:#5f7076}
+.health-empty,.health-caution,.health-energy-side small{color:#5f7069}
+.health-band-values small{font-size:12px}
+.health-record .icon-button{flex-basis:44px;width:44px;height:44px}
+.health-text-button{min-height:40px}
+.health-meal-markers{gap:4px}
+.health-meal-markers button{min-width:36px;min-height:48px}
+.health-editor .modal-actions button{min-height:44px}
+.health-tile:active{background:#f5faf8;border-color:#7d9c90}
 @media(max-width:600px){.health-dashboard{padding:20px 16px 104px}.health-heading h1{font-size:23px}.health-tabs{gap:0;justify-content:space-between}.health-tabs>button{font-size:13px}.health-energy{grid-template-columns:minmax(0,1fr) 132px minmax(0,1fr);gap:5px}.health-ring{width:132px;height:132px}.health-ring strong{font-size:26px}.health-energy-side strong{font-size:17px}.health-energy-side span{font-size:11px}.health-macros>div{padding-left:9px}.health-record>span{max-width:75px}.health-record{gap:4px}.health-section-heading{gap:6px}}

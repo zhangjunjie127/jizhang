@@ -9,7 +9,9 @@
 .date-wheels{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
 .date-wheel-column{min-width:0;text-align:center}
 .date-wheel-label{display:block;color:#87929f;font-size:12px;margin-bottom:8px}
-.date-wheel{height:200px;overflow-y:auto;overscroll-behavior:contain;scroll-snap-type:y mandatory;scrollbar-width:none;padding:80px 0;box-sizing:border-box;background:linear-gradient(to bottom,transparent 80px,#edf5ff 80px,#edf5ff 120px,transparent 120px);border-radius:6px;touch-action:pan-y}
+.date-wheel{height:200px;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;scroll-snap-type:y mandatory;scrollbar-width:none;padding:80px 0;box-sizing:border-box;background:linear-gradient(to bottom,transparent 80px,#edf5ff 80px,#edf5ff 120px,transparent 120px);border-radius:6px;touch-action:pan-y;cursor:grab;user-select:none;-webkit-user-select:none}
+.date-wheel.is-kinetic{scroll-snap-type:none}
+.date-wheel:active{cursor:grabbing}
 .date-wheel::-webkit-scrollbar{display:none}
 .date-wheel-option{height:40px;display:flex;align-items:center;justify-content:center;flex-shrink:0;scroll-snap-align:center;font-size:16px;color:#8b96a4;cursor:pointer;font-variant-numeric:tabular-nums}
 .date-wheel-option[aria-selected=true]{color:var(--brand-strong);font-size:18px;font-weight:600}

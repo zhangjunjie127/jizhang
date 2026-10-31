@@ -21,6 +21,10 @@ import android.widget.*;
 import androidx.core.app.NotificationCompat;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import org.json.JSONObject;
 
 public class AssistantOverlayService extends Service {
@@ -55,6 +59,127 @@ public class AssistantOverlayService extends Service {
     private String pendingMainAction;
     private ValueCallback<Uri[]> fileCallback;
     private String fileRequestId;
+    private LinearLayout greetingBubble;
+    private final ExecutorService greetingNetwork = Executors.newSingleThreadExecutor();
+    private volatile HttpURLConnection greetingConnection;
+    private boolean greetingLoading;
+    private int greetingEpoch;
+    private long lastTouchAt;
+    private final Runnable hideGreeting = () -> hideGreeting();
+    private final Runnable greetingTick = new Runnable() {
+        @Override public void run() {
+            if (instance != AssistantOverlayService.this) return;
+            if (canShowGreeting() && !greetingLoading) pollGreeting();
+            main.postDelayed(this, 5 * 60 * 1000);
+        }
+    };
+
+    private boolean canShowGreeting() {
+        PowerManager power = getSystemService(PowerManager.class);
+        KeyguardManager keyguard = getSystemService(KeyguardManager.class);
+        return catRoot != null && catRoot.getVisibility() == View.VISIBLE && pageReady
+            && !expanded && !callActive && !preparing && !requiresUnlock && panelMotion == null
+            && fileCallback == null && token != null && base != null
+            && power.isInteractive() && !keyguard.isKeyguardLocked()
+            && SystemClock.elapsedRealtime() - lastTouchAt > 60000;
+    }
+    private void pollGreeting() {
+        greetingLoading = true;
+        final int epoch = greetingEpoch;
+        final String requestToken = token, requestBase = base;
+        greetingNetwork.execute(() -> {
+            String text = null;
+            int status = 0;
+            HttpURLConnection connection = null;
+            try {
+                connection = (HttpURLConnection) new URL(requestBase.replaceAll("/+$", "") + "/api/assistant/greeting").openConnection();
+                greetingConnection = connection;
+                connection.setInstanceFollowRedirects(false);
+                connection.setConnectTimeout(10000);
+                connection.setReadTimeout(70000);
+                connection.setRequestMethod("POST");
+                connection.setRequestProperty("Authorization", "Bearer " + requestToken);
+                connection.setRequestProperty("Content-Type", "application/json");
+                connection.setDoOutput(true);
+                try (OutputStream output = connection.getOutputStream()) { output.write("{}".getBytes(StandardCharsets.UTF_8)); }
+                status = connection.getResponseCode();
+                if (status == 200) {
+                    try (InputStream input = connection.getInputStream(); ByteArrayOutputStream output = new ByteArrayOutputStream()) {
+                        byte[] buffer = new byte[1024]; int count;
+                        while ((count = input.read(buffer)) != -1) {
+                            if (output.size() + count > 16384) throw new IOException("Greeting response too large");
+                            output.write(buffer, 0, count);
+                        }
+                        JSONObject greeting = new JSONObject(output.toString("UTF-8")).optJSONObject("greeting");
+                        if (greeting != null) text = greeting.optString("text", "");
+                    }
+                }
+            } catch (Exception ignored) {
+                // No canned greeting or delayed backlog when the network is unavailable.
+            } finally {
+                if (connection != null) connection.disconnect();
+                if (greetingConnection == connection) greetingConnection = null;
+            }
+            final String result = text;
+            final int responseStatus = status;
+            main.post(() -> {
+                greetingLoading = false;
+                if (instance != AssistantOverlayService.this || epoch != greetingEpoch
+                    || !java.util.Objects.equals(token, requestToken) || !java.util.Objects.equals(base, requestBase)) return;
+                if (responseStatus == 401) { stopSelf(); return; }
+                if (result != null && !result.trim().isEmpty() && result.length() <= 80 && canShowGreeting()) showGreeting(result);
+            });
+        });
+    }
+    private void hideGreeting() {
+        main.removeCallbacks(hideGreeting);
+        if (greetingBubble != null) {
+            if (greetingBubble.isAttachedToWindow()) manager.removeView(greetingBubble);
+            greetingBubble = null;
+        }
+    }
+    private void showGreeting(String text) {
+        hideGreeting();
+        greetingBubble = new LinearLayout(this);
+        greetingBubble.setGravity(Gravity.CENTER_VERTICAL);
+        greetingBubble.setPadding(dp(12), dp(8), dp(4), dp(8));
+        GradientDrawable surface = background(Color.rgb(250, 253, 255), 8);
+        surface.setStroke(dp(1), Color.rgb(191, 211, 225));
+        greetingBubble.setBackground(surface);
+        greetingBubble.setElevation(dp(5));
+        TextView message = new TextView(this);
+        message.setText(text); message.setTextSize(14); message.setTextColor(Color.rgb(35, 54, 69));
+        message.setLineSpacing(dp(3), 1);
+        message.setContentDescription("助手问候：" + text + "，点击打开对话");
+        message.setOnClickListener(v -> { hideGreeting(); openFromEdge(); });
+        greetingBubble.addView(message, new LinearLayout.LayoutParams(0, -2, 1));
+        ImageButton close = new ImageButton(this);
+        close.setImageResource(android.R.drawable.ic_menu_close_clear_cancel);
+        close.setColorFilter(Color.rgb(90, 108, 119));
+        close.setBackgroundColor(Color.TRANSPARENT);
+        close.setContentDescription("收起问候");
+        close.setOnClickListener(v -> hideGreeting());
+        greetingBubble.addView(close, new LinearLayout.LayoutParams(dp(40), dp(44)));
+        int width = Math.min(dp(260), screenWidth() - catParams.width - dp(16));
+        greetingBubble.measure(View.MeasureSpec.makeMeasureSpec(width, View.MeasureSpec.EXACTLY),
+            View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED));
+        int height = greetingBubble.getMeasuredHeight();
+        int[] position = AssistantGreetingLayout.position(screenWidth(), screenHeight(),
+            catParams.x, catParams.y, catParams.width, catParams.height, width, height, dp(8), dockLeft);
+        WindowManager.LayoutParams bubbleParams = new WindowManager.LayoutParams(width, height,
+            WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
+            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE | WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL
+                | WindowManager.LayoutParams.FLAG_SECURE, PixelFormat.TRANSLUCENT);
+        bubbleParams.gravity = Gravity.TOP | Gravity.LEFT;
+        bubbleParams.x = position[0]; bubbleParams.y = position[1];
+        try {
+            manager.addView(greetingBubble, bubbleParams);
+            unread++;
+            syncCat();
+            event("assistant-greeting", "");
+            main.postDelayed(hideGreeting, 15000);
+        } catch (RuntimeException error) { hideGreeting(); }
+    }
 
     String consumeMainAction(String user, String server) {
         if (!belongsTo(user) || !java.util.Objects.equals(base, server)) return "";
@@ -104,11 +229,21 @@ public class AssistantOverlayService extends Service {
         notifications.createNotificationChannel(new NotificationChannel(CHANNEL, "桌面助手", NotificationManager.IMPORTANCE_LOW));
         screenReceiver = new BroadcastReceiver() {
             @Override public void onReceive(Context context, Intent intent) {
-                requiresUnlock = AppLockPlugin.hasEnabledLock(context);
-                if (root != null) layout(false);
+                if (Intent.ACTION_SCREEN_OFF.equals(intent.getAction())) {
+                    greetingEpoch++;
+                    HttpURLConnection connection = greetingConnection;
+                    if (connection != null) connection.disconnect();
+                    requiresUnlock = AppLockPlugin.hasEnabledLock(context);
+                    hideGreeting();
+                    if (root != null) layout(false);
+                } else {
+                    main.removeCallbacks(greetingTick);
+                    main.postDelayed(greetingTick, 60000);
+                }
             }
         };
         IntentFilter filter = new IntentFilter(Intent.ACTION_SCREEN_OFF);
+        filter.addAction(Intent.ACTION_USER_PRESENT);
         if (Build.VERSION.SDK_INT >= 33) registerReceiver(screenReceiver, filter, RECEIVER_NOT_EXPORTED);
         else registerReceiver(screenReceiver, filter);
     }
@@ -163,6 +298,8 @@ public class AssistantOverlayService extends Service {
             } else if (open) animatePresentation(true);
             else layout(false);
             getSharedPreferences("assistant_overlay", MODE_PRIVATE).edit().remove("dismissed_user").apply();
+            main.removeCallbacks(greetingTick);
+            main.postDelayed(greetingTick, 60000);
         } catch (Exception error) {
             Toast.makeText(this, "桌面助手无法启动，请检查悬浮窗权限", Toast.LENGTH_LONG).show();
             stopSelf();
@@ -376,6 +513,8 @@ public class AssistantOverlayService extends Service {
                 WindowManager.LayoutParams target = handle ? catParams : params;
                 switch (event.getActionMasked()) {
                     case MotionEvent.ACTION_DOWN:
+                        lastTouchAt = SystemClock.elapsedRealtime();
+                        hideGreeting();
                         tracking = true;
                         if (handle) event("assistant-touch", "");
                         x = event.getRawX(); y = event.getRawY(); startX = target.x; startY = target.y; moved = false; return true;
@@ -440,6 +579,7 @@ public class AssistantOverlayService extends Service {
         manager.updateViewLayout(root, params);
     }
     private void openFromEdge() {
+        hideGreeting();
         KeyguardManager keyguard = getSystemService(KeyguardManager.class);
         if (requiresUnlock || keyguard.isKeyguardLocked()) {
             startActivity(new Intent(this, MainActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
@@ -544,6 +684,7 @@ public class AssistantOverlayService extends Service {
     }
     private void layout(boolean open) {
         if (root == null) return;
+        if (open) hideGreeting();
         pendingOpen = false;
         cancelPanelMotion();
         content.setLayoutParams(new FrameLayout.LayoutParams(-1, -1));
@@ -656,10 +797,16 @@ public class AssistantOverlayService extends Service {
     }
     @Override public void onConfigurationChanged(Configuration config) {
         super.onConfigurationChanged(config);
+        hideGreeting();
         keyboardBottom = 0;
         layout(expanded);
     }
     private void destroyWindow() {
+        greetingEpoch++;
+        hideGreeting();
+        main.removeCallbacks(greetingTick);
+        HttpURLConnection connection = greetingConnection;
+        if (connection != null) connection.disconnect();
         if (fileCallback != null) finishFileRequest(fileRequestId, null);
         pendingMainAction = null;
         cancelPanelMotion();
@@ -688,6 +835,7 @@ public class AssistantOverlayService extends Service {
         main.removeCallbacksAndMessages(null);
         destroyWindow();
         token = null; base = null; userId = null;
+        greetingNetwork.shutdownNow();
         stopForeground(STOP_FOREGROUND_REMOVE);
         super.onDestroy();
     }

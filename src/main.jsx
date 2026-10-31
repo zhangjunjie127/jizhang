@@ -10,6 +10,7 @@ import {
 import { getBase, getToken, isNative, request, syncReminders } from './api';
 import { AssistantBackdrop, AssistantEdge, AssistantMainActions, DesktopAssistantLifecycle, NativeAssistant, overlaySession } from './floating-assistant';
 import { useAssistantPanelMotion } from './assistant-panel-motion';
+import { useAppMotion } from './interface-motion';
 import { VoiceCall } from './voice';
 import { mergeMessages } from './timeline';
 import { Ledger, BatchReview } from './bookkeeping';
@@ -38,13 +39,11 @@ import { useDesktopWidgets, clearDesktopWidgets } from './desktop-widgets';
 import { AppLockProvider } from './app-lock';
 import './style.css';
 import './interface.css';
+import './visual-refresh.css';
 import './receipt.css';
+import { PERSONA_OPTIONS as PERSONAS, personaOption } from '../shared/personas.mjs';
+import { AssistantGreeting } from './assistant-greeting';
 
-const PERSONAS = {
-  gentle: { name: '小在', label: '温柔型', detail: '先听你说，再陪你做', color: 'green', initial: '在' },
-  blunt: { name: '阿直', label: '直球型', detail: '话说得直，事陪你办', color: 'coral', initial: '直' },
-  witty: { name: '小酸', label: '嘴损型', detail: '嘴上吐槽，心里惦记', color: 'blue', initial: '酸' },
-};
 const NAVIGATION = [['ledger', Wallet, '记账'], ['tasks', ListChecks, '待办'], ['health', Heart, '健康'], ['mine', UserRound, '我的']];
 const dateString = () => new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Shanghai' });
 const money = cents => (cents / 100).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -55,7 +54,7 @@ function IconButton({ icon: Icon, label, className = '', ...props }) {
   return <button className={`icon-button ${className}`} aria-label={label} title={label} {...props}><Icon size={20} /></button>;
 }
 function Avatar({ persona = 'gentle', size = '', speaking = false }) {
-  const item = PERSONAS[persona];
+  const item = personaOption(persona);
   return <span className={`avatar ${item.color} ${size} ${speaking ? 'speaking' : ''}`}>
     {persona === 'gentle' ? <img src="/assistant-mascot.svg" alt="" onError={e => { e.currentTarget.style.display = 'none'; }} /> : null}
     <span>{item.initial}</span>
@@ -232,11 +231,14 @@ function App() {
   const [mineView, setMineView] = useState('home');
   const [assistantOpen, setAssistantOpen] = useState(Boolean(overlaySession));
   const assistantMotion = useAssistantPanelMotion(assistantOpen, setAssistantOpen, Boolean(overlaySession));
+  const appMotionRef = useRef(null);
   const [nativeExpanded, setNativeExpanded] = useState(true);
   const [nativeDock, setNativeDock] = useState('right');
   const [edgeVisible, setEdgeVisible] = useState(true);
   const [desktopEnabled, setDesktopEnabled] = useState(false);
   const [modal, setModal] = useState(null);
+  const [personaBusy, setPersonaBusy] = useState(false);
+  const [personaError, setPersonaError] = useState('');
   const [toast, setToast] = useState('');
   const [text, setText] = useState('');
   const [sending, setSending] = useState(false);
@@ -260,7 +262,11 @@ function App() {
   const scrollEnd = useRef(null);
   const followMessages = useRef(true);
   const toastTimer = useRef(null);
-  const persona = PERSONAS[state?.user.persona || 'gentle'];
+  const persona = personaOption(state?.user.persona);
+  useAppMotion(appMotionRef, {
+    page, mineView, ledgerView, assistantOpen,
+    messageKey: state?.messages.at(-1)?.id || '',
+  });
   const confirmed = state?.records.filter(r => r.status === 'confirmed') || [];
   const pending = state?.records.filter(r => r.status === 'pending') || [];
   const readKey = state ? `zaizai-chat-read-${state.user.id}` : '';
@@ -371,12 +377,14 @@ function App() {
     const stop = () => endCall();
     const visibility = event => setNativeExpanded(event.detail === 'open');
     const dock = event => setNativeDock(event.detail === 'left' ? 'left' : 'right');
+    const greeting = () => refresh().catch(() => {});
     document.documentElement.classList.add('native-assistant-page');
     window.addEventListener('assistant-voice-ready', ready);
     window.addEventListener('assistant-voice-error', failed);
     window.addEventListener('assistant-hangup', stop);
     window.addEventListener('assistant-visibility', visibility);
     window.addEventListener('assistant-dock', dock);
+    window.addEventListener('assistant-greeting', greeting);
     window.ZaizaiAssistant.syncPresentation?.();
     return () => {
       window.removeEventListener('assistant-voice-ready', ready);
@@ -384,6 +392,7 @@ function App() {
       window.removeEventListener('assistant-hangup', stop);
       window.removeEventListener('assistant-visibility', visibility);
       window.removeEventListener('assistant-dock', dock);
+      window.removeEventListener('assistant-greeting', greeting);
       document.documentElement.classList.remove('native-assistant-page');
     };
   }, [sending]);
@@ -563,7 +572,7 @@ function App() {
     }} />}
     {!overlaySession && <HabitReminders userId={state.user.id} records={state.records} onNotify={notify} />}
     <DesktopAssistantLifecycle userId={state.user.id} suspended={Boolean(callStatus)} onRunningChange={running => { setDesktopEnabled(running); setEdgeVisible(!running); }} />
-    <PreferencesProvider userId={state.user.id}><div className={`app-shell page-${page}${overlaySession ? ` native-assistant-host${nativeExpanded ? '' : ' is-collapsed'}` : ''}`}>
+    <PreferencesProvider userId={state.user.id}><div ref={appMotionRef} className={`app-shell page-${page}${overlaySession ? ` native-assistant-host${nativeExpanded ? '' : ' is-collapsed'}` : ''}`}>
     <AssistantBackdrop key={state.user.id} open={assistantOpen} userId={state.user.id} />
     <aside className="sidebar">
       <div className="brand"><img src="/app-icon.png" alt="" /><span>在在</span><small>内测</small></div>
@@ -650,6 +659,9 @@ function App() {
       {index === 2 && <button className="nav-create" aria-label={page === 'ledger' && ledgerView === 'debt' ? '新增借款' : { ledger: '记一笔', tasks: '添加待办', health: '添加健康记录' }[page] || '新建记录'} title={page === 'ledger' && ledgerView === 'debt' ? '新增借款' : { ledger: '记一笔', tasks: '新建日程', health: '添加健康记录' }[page] || '新建记录'} onClick={() => page === 'ledger' && ledgerView === 'debt' ? setDebtCreateSignal(value => value + 1) : page === 'tasks' ? setPlannerCreateSignal(value => value + 1) : page === 'health' ? setHealthCreateSignal(value => value + 1) : setModal({ type: 'record-kind', scope: page })}><Plus size={30} /></button>}
       <button aria-label={label} aria-current={page === id ? 'page' : undefined} className={page === id ? 'active' : ''} onClick={() => setPage(id)}><Icon size={22} /><span>{label}</span>{badgeCount(id) > 0 && <i aria-label={`${badgeCount(id)} 条待查看`} />}</button>
     </React.Fragment>)}</nav>
+    {!isNative && !overlaySession && <AssistantGreeting userId={state.user.id}
+      enabled={Boolean(state.user.proactive && edgeVisible && !assistantOpen && !modal && !callStatus)}
+      onOpen={openAssistant} onReceived={() => refresh().catch(() => {})} />}
     {modal?.type === 'account-service' && <AccountService type={modal.service} Modal={Modal} user={state.user} onClose={() => setModal(null)} onPasswordChanged={() => { if (call.current) endCall(); }} />}
     {modal?.type === 'account-settings' && <AccountSettings Modal={Modal} user={state.user} onClose={() => setModal(null)}
       onSaved={user => {
@@ -690,7 +702,18 @@ function App() {
       setTrash(previous => previous.filter(r => r.id !== record.id));
       if (record.kind === 'task') syncReminders(result.records, true).catch(error => notify(error.message));
     })} /></div>) : <Empty icon={Trash2} title="回收站是空的" detail="" />}</Modal>}
-    {modal?.type === 'persona' && <Modal title="今天，谁来陪你？" onClose={() => setModal(null)}><div className="persona-list">{Object.entries(PERSONAS).map(([id, value]) => <button key={id} className={state.user.persona === id ? 'selected' : ''} onClick={safe(async () => { await profile({ persona: id }); setModal(null); })}><Avatar persona={id} /><div><strong>{value.name}<small>{value.label}</small></strong><p>{value.detail}</p></div>{state.user.persona === id ? <Check size={20} /> : <ChevronRight size={18} />}</button>)}</div><p className="modal-hint">换一种相处方式，共同的记忆不会清空。</p></Modal>}
+    {modal?.type === 'persona' && <Modal title="选择陪伴你的助手" onClose={() => { if (!personaBusy) { setPersonaError(''); setModal(null); } }}>
+      <div className="persona-list" aria-busy={personaBusy}>{Object.entries(PERSONAS).map(([id, value]) =>
+        <button key={id} disabled={personaBusy} aria-pressed={state.user.persona === id} className={state.user.persona === id ? 'selected' : ''} onClick={async () => {
+          setPersonaError('');
+          if (state.user.persona === id) { setModal(null); return; }
+          setPersonaBusy(true);
+          try { await profile({ persona: id }); setModal(null); }
+          catch (error) { setPersonaError(error.message || '切换失败，请重试'); }
+          finally { setPersonaBusy(false); }
+        }}><Avatar persona={id} /><div><strong>{value.name}<small>{value.label}</small></strong><p>{value.detail}</p></div>{state.user.persona === id ? <Check size={20} /> : <ChevronRight size={18} />}</button>)}</div>
+      {personaError && <p role="alert" className="error">{personaError}</p>}
+    </Modal>}
     {modal?.type === 'memories' && <Modal title="我们记得的事" onClose={() => setModal(null)}>{state.memories.length ? state.memories.map(memory => <div className="memory-row" key={memory.id}><div><p>{memory.text}</p><small>{new Date(memory.created).toLocaleDateString('zh-CN')}</small></div><IconButton icon={Trash2} label="删除这条记忆" onClick={safe(async () => { if (window.confirm('删除这条记忆？原聊天内容仍会保留。')) await action(`/memories/${memory.id}`, { method: 'DELETE' }); })} /></div>) : <Empty icon={History} title="慢慢了解你" detail="助手记住的偏好和约定会出现在这里。" />}<button className="text-button danger" onClick={safe(async () => { if (window.confirm('清空全部聊天与记忆？记账、待办和体重记录会保留，此操作无法撤销。')) { await action('/history', { method: 'DELETE' }); setModal(null); } })}>清空聊天与记忆</button></Modal>}
     {modal?.type === 'usage' && <Modal title="算力用量" onClose={() => setModal(null)}><div className="usage-list">{usage?.usage.map(item => <div key={item.kind}><span>{item.kind === 'text' ? '文字模型响应' : '语音模型响应'}</span><strong>{item.count} 次</strong></div>)}</div><p className="modal-hint">目前使用内测服务，未开放充值、扣费或支付订单。调用次数不等于费用。</p></Modal>}
     {modal?.type === 'privacy' && <Modal title="隐私与内测说明" onClose={() => setModal(null)}><div className="privacy-copy"><p>你对话的是 AI，而不是真人。亲密模式不会改变工具权限，也不会阻止你暂停或离开。</p><p>通话会向已配置的 AI 服务实时传送声音；本 App 不保存原始录音，会保存文字转录。上游服务的数据政策另行适用。</p><p>记录、对话和记忆保存在私有后端。当前版本采用自填生日限制关系模式，不是正式年龄核验。</p><p>安卓待办提醒需要系统通知权限；系统节电策略可能造成延迟。主动关心在服务运行时生成，App 关闭时暂不推送 AI 消息。</p><p>当前为局域网内测版，不适合公网部署或录入敏感信息，正式开放前需完成 HTTPS、年龄核验和数据管理。</p></div></Modal>}

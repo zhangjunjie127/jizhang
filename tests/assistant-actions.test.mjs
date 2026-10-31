@@ -5,6 +5,24 @@ import { randomUUID } from 'node:crypto';
 import { createDebtStore } from '../server/debts.mjs';
 import { createAssistantActions } from '../server/assistant-actions.mjs';
 import { validateRecord } from '../server/domain.mjs';
+import { PERSONA_IDS } from '../shared/personas.mjs';
+
+test('six personality changes require confirmation and preserve approved memories', t => {
+  const { actions, db, confirm } = setup(t);
+  db.prepare("INSERT INTO memories VALUES ('m','a','回答简短','2026-10-10')").run();
+  for (const persona of PERSONA_IDS) {
+    const before = db.prepare("SELECT persona FROM users WHERE id='a'").get().persona;
+    const pending = actions.prepare('a', { operation: 'update_profile', data: { persona } });
+    assert.equal(db.prepare("SELECT persona FROM users WHERE id='a'").get().persona, before);
+    confirm(pending);
+    assert.equal(db.prepare("SELECT persona FROM users WHERE id='a'").get().persona, persona);
+    assert.equal(db.prepare("SELECT text FROM memories WHERE id='m'").get().text, '回答简短');
+  }
+  for (const persona of ['constructor', '__proto__', 'toString']) {
+    assert.throws(() => actions.prepare('a', { operation: 'update_profile', data: { persona } }), /设置无效/);
+  }
+  assert.equal(db.prepare("SELECT persona FROM users WHERE id='b'").get().persona, 'gentle');
+});
 
 function setup(t) {
   const db = new DatabaseSync(':memory:');

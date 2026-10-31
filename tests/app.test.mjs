@@ -110,6 +110,30 @@ test('health sync API stores only authenticated account preferences and rejects 
   } })).status, 409);
   assert.equal((await api('/state', { token: user.token })).data.healthSync, undefined);
 });
+test('full account export is authenticated, account-scoped, and excludes credentials', async () => {
+  const saved = await api('/health/entries', { token: user.token, method: 'POST', body: {
+    requestId: randomUUID(), kind: 'water', date: '2026-10-02', ml: 300,
+  } });
+  assert.equal(saved.status, 201);
+  assert.equal((await fetch(`${base}/api/account/export`)).status, 401);
+  const response = await fetch(`${base}/api/account/export`, {
+    headers: { Authorization: `Bearer ${user.token}` },
+  });
+  assert.equal(response.status, 200);
+  assert.match(response.headers.get('content-type'), /application\/json/);
+  assert.match(response.headers.get('content-disposition'), /zaizai-account-export\.json/);
+  const bundle = await response.json();
+  assert.equal(bundle.format, 'zaizai-account-export');
+  assert.equal(bundle.version, 1);
+  assert.equal(bundle.account.id, user.user.id);
+  assert.equal(bundle.account.username, user.user.username);
+  assert.equal(Object.hasOwn(bundle.account, 'password'), false);
+  assert.equal(Object.hasOwn(bundle, 'sessions'), false);
+  assert.ok(bundle.data.health_entries.some(row => row.user_id === user.user.id));
+  assert.ok(bundle.data.records.every(row => row.user_id === user.user.id));
+  assert.ok(bundle.data.health_entries.every(row => row.user_id === user.user.id));
+  assert.equal(JSON.stringify(bundle).includes(other.user.id), false);
+});
 test('medical report extraction requires authentication and explicit photo consent', async () => {
   assert.equal((await api('/health/medical-recognize', { method: 'POST', body: {} })).status, 401);
   assert.equal((await api('/health/medical-recognize', { token: user.token, method: 'POST',
@@ -194,6 +218,32 @@ test('persona changes preserve records and are added to shared history', async (
   const isolated = await api('/state', { token: other.token });
   assert.equal(isolated.data.records.length, 0);
   assert.equal(isolated.data.messages.length, 0);
+});
+test('daily greeting endpoint requires authentication and never fabricates or replays without AI', async () => {
+  assert.equal((await api('/assistant/greeting', { method: 'POST', body: {} })).status, 401);
+  const before = (await api('/state', { token: user.token })).data.messages;
+  for (const token of [user.token, other.token]) {
+    const result = await api('/assistant/greeting', { token, method: 'POST', body: {} });
+    assert.equal(result.status, 200);
+    assert.equal(result.data.greeting, null);
+  }
+  assert.deepEqual((await api('/state', { token: user.token })).data.messages, before);
+});
+test('all six personas persist without changing records or memories; inherited IDs are rejected', async () => {
+  const original = (await api('/state', { token: user.token })).data;
+  for (const persona of ['gentle', 'rational', 'bright', 'calm', 'witty', 'blunt']) {
+    const result = await api('/profile', { token: user.token, method: 'PATCH', body: { persona } });
+    assert.equal(result.status, 200);
+    const saved = (await api('/state', { token: user.token })).data;
+    assert.equal(saved.user.persona, persona);
+    assert.deepEqual(saved.records, original.records);
+    assert.deepEqual(saved.memories, original.memories);
+  }
+  for (const persona of ['constructor', '__proto__', 'toString', 'missing']) {
+    const result = await api('/profile', { token: user.token, method: 'PATCH', body: { persona } });
+    assert.equal(result.status, 400);
+  }
+  assert.equal((await api('/state', { token: other.token })).data.user.persona, 'gentle');
 });
 test('pending tasks cannot be completed; confirmed ones can', async () => {
   const result = await api('/records', { token: user.token, method: 'POST', body: { kind: 'task', payload: { title: '交材料', due: '2026-09-20T15:00:00+08:00' } } });

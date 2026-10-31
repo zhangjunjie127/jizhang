@@ -17,6 +17,11 @@
 .account-editor{padding:20px 18px;background:white}
 .account-editor small{font-size:11px;color:#8a949e}
 .account-settings-saved{padding:0 18px;font-size:12px;color:#247647}
+.account-data-export{padding-top:16px;padding-bottom:16px;display:grid;gap:12px}
+.account-export-copy strong{font-size:14px}
+.account-export-copy p{font-size:12px;line-height:1.65;color:#7a8795;margin:6px 0 0}
+.account-data-export>.secondary{min-height:42px;justify-content:center;gap:8px}
+.account-data-export>.error-box{margin:0}
 .account-avatar-preview{width:160px;height:160px;border-radius:50%;margin:8px auto 16px;background:var(--brand-soft);color:var(--brand-strong);font-size:52px}
 .account-editor .account-deletion-consent{display:flex;flex-direction:row;align-items:flex-start;gap:10px;line-height:1.6}
 .account-editor .account-deletion-consent input{width:18px;height:18px;min-height:18px;flex-shrink:0;margin-top:2px;accent-color:var(--brand-strong)}

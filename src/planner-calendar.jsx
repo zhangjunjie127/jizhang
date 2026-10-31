@@ -1,5 +1,7 @@
 import { DateInput, DatePickerDialog } from './date-picker';
 import React, { useMemo, useRef, useState } from 'react';
+import { useGSAP } from '@gsap/react';
+import { gsap } from 'gsap';
 import { Check, Trash2 } from 'lucide-react';
 import { shiftDate, weekday, PLANNER_TONES } from '../shared/planner.mjs';
 import { anniversaryOccurs, calendarInfo, validCalendarDate, calendarAlmanac, calendarCorner, calendarDayEntries } from '../shared/calendar.mjs';
@@ -8,6 +10,21 @@ import { requestId } from './navigation';
 
 export function MonthCalendar({ month, selected, today, dayTasks, anniversaries, onSelect, onTask, onAnniversary, onDay }) {
   const capacity = 6;
+  const grid = useRef(null);
+  useGSAP(() => {
+    const selectedDate = grid.current?.querySelector('.planner-cell-date[aria-pressed="true"] .planner-day-number');
+    if (!selectedDate) return;
+    const media = gsap.matchMedia();
+    media.add('(prefers-reduced-motion: no-preference)', () => {
+      gsap.fromTo(selectedDate, { scale: .78 }, {
+        scale: 1,
+        duration: .24,
+        ease: 'back.out(2)',
+        clearProps: 'transform',
+      });
+    });
+    return () => media.revert();
+  }, { scope: grid, dependencies: [month, selected], revertOnUpdate: true });
   const days = useMemo(() => {
     const first = `${month}-01`, start = shiftDate(first, -(weekday(first) + 1) % 7);
     const dates = Array.from({ length: 42 }, (_, index) => shiftDate(start, index));
@@ -18,7 +35,7 @@ export function MonthCalendar({ month, selected, today, dayTasks, anniversaries,
     .map(item => [item.id, calendarInfo(item.payload.date)])), [anniversaries]);
   return <div className="planner-month-board">
     <div className="planner-calendar-weekdays">{['日', '一', '二', '三', '四', '五', '六'].map(day => <span key={day}>{day}</span>)}</div>
-    <div className="planner-month-grid" data-capacity={capacity} style={{ '--week-count': days.length / 7 }}>{days.map(({ date, info }) => {
+    <div ref={grid} className="planner-month-grid" data-capacity={capacity} style={{ '--week-count': days.length / 7 }}>{days.map(({ date, info }) => {
       const tasks = dayTasks.get(date) || [];
       const personal = anniversaries.filter(item => anniversaryOccurs(item.payload, date, info, originalDates.get(item.id)));
       const corner = calendarCorner(tasks, personal.length > 0);

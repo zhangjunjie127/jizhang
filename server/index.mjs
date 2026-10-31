@@ -7,11 +7,13 @@ import { WebSocket, WebSocketServer } from 'ws';
 import { fileURLToPath } from 'node:url';
 import { filterLedger, ledgerCsv, summarizeLedger } from '../shared/ledger.mjs';
 import { createCheckInRunner, CHECKIN_INSTRUCTIONS } from './proactive.mjs';
+import { GREETING_INSTRUCTIONS } from './greetings.mjs';
 import { receiptImage, receiptDraft, RECEIPT_PROMPT } from './receipt.mjs';
 import { TASK_CATEGORY_PROMPT, parseTaskCategory } from './task-classification.mjs';
 import { createDebtStore } from './debts.mjs';
 import { createAssistantActions } from './assistant-actions.mjs';
 import { createAccountServices } from './account-services.mjs';
+import { accountExport } from './account-export.mjs';
 import { createAccountDeletionStore } from './account-deletion.mjs';
 import { createPlannerStore } from './planner.mjs';
 import { createTaskPhotoStore } from './task-photos.mjs';
@@ -308,11 +310,13 @@ async function chat(user, text, { proactive = false } = {}) {
 const checkin = createCheckInRunner({
   db, snapshot, appendMessage: message,
   isBusy: id => busy.has(id) || voices.has(id) || !KEY || !BASE,
-  generate: async (user, state, candidates) => {
+  generate: async (user, state, candidates, { greeting, previousGreetings } = {}) => {
     const result = await completion(user, [
-      { role: 'system', content: systemPrompt(user, context(user)) },
-      { role: 'system', content: CHECKIN_INSTRUCTIONS },
-      { role: 'user', content: JSON.stringify({ candidates, recentMessages: state.messages.slice(-60) }) },
+      { role: 'system', content: systemPrompt(user, greeting ? {
+        memories: state.memories, recentMessages: state.messages.slice(-24),
+      } : context(user)) },
+      { role: 'system', content: greeting ? GREETING_INSTRUCTIONS : CHECKIN_INSTRUCTIONS },
+      { role: 'user', content: JSON.stringify({ candidates, previousGreetings, recentMessages: state.messages.slice(-60) }) },
     ], false);
     return result.content;
   },
@@ -400,6 +404,14 @@ const server = http.createServer(async (req, res) => {
     const token = req.headers.authorization?.replace(/^Bearer /, '');
     const user = userFromToken(token);
     limit(`api:${user.id}`, 300, 60000);
+    if (path === '/api/assistant/greeting' && req.method === 'POST') {
+      limit(`greeting:${user.id}`, 4, 60000);
+      await readBody(req, 1024);
+      const greeting = await checkin(user, { greeting: true });
+      // Return only a newly committed greeting, never a backlog after reconnect or restart.
+      userFromToken(token);
+      return json(res, 200, { greeting: greeting || null });
+    }
     if (path === '/api/health/dashboard' && req.method === 'GET') return json(res, 200, health.state(user.id));
     if (path === '/api/health/sync' && req.method === 'GET') return json(res, 200, healthSync.state(user.id));
     if (path === '/api/health/sync' && req.method === 'PUT') return json(res, 200, healthSync.save(user.id, await readBody(req, 4096)));
@@ -485,6 +497,17 @@ const server = http.createServer(async (req, res) => {
       const body = await readBody(req, 4096);
       return json(res, 200, { application: accountDeletions.cancel(user.id, body?.id || '') });
     }
+    if (path === '/api/account/export' && req.method === 'GET') {
+      limit(`account-export:${user.id}`, 3);
+      const bundle = JSON.stringify(accountExport(db, user.id));
+      res.writeHead(200, {
+        'Content-Type': 'application/json; charset=utf-8',
+        'Cache-Control': 'no-store',
+        'Content-Disposition': 'attachment; filename="zaizai-account-export.json"',
+      });
+      res.end(bundle);
+      return;
+    }
     if (/^\/api\/account\/bindings\/(phone|wechat|email)$/.test(path) && req.method === 'POST') {
       return json(res, 503, { error: '绑定服务暂未开通，当前不会保存或验证绑定信息', code: 'BINDING_NOT_CONFIGURED' });
     }
@@ -547,7 +570,7 @@ const server = http.createServer(async (req, res) => {
       const body = await readBody(req);
       const persona = body.persona || user.persona;
       const relationship = body.relationship || user.relationship;
-      if (!PERSONAS[persona] || !['friend', 'romance'].includes(relationship)) fail('设置无效');
+      if (!Object.hasOwn(PERSONAS, persona) || !['friend', 'romance'].includes(relationship)) fail('设置无效');
       if (relationship === 'romance' && ageOn(user.birthday) < 18) fail('未成年人仅开放朋友模式', 403);
       if (voices.has(user.id) && (persona !== user.persona || relationship !== user.relationship)) fail('请先结束通话再切换助手或关系模式', 409);
       const proactive = body.proactive === undefined ? user.proactive : Number(Boolean(body.proactive));
@@ -849,7 +872,7 @@ function voice(downstream) {
                       transcription: { model: 'gpt-4o-mini-transcribe', language: 'zh' },
                       turn_detection: { type: 'server_vad', threshold: 0.55, prefix_padding_ms: 300, silence_duration_ms: 600, create_response: false, interrupt_response: true },
                     },
-                    output: { format: { type: 'audio/pcm', rate: 24000 }, voice: (PERSONAS[user.persona] || PERSONAS.gentle).voice },
+                    output: { format: { type: 'audio/pcm', rate: 24000 }, voice: (Object.hasOwn(PERSONAS, user.persona) ? PERSONAS[user.persona] : PERSONAS.gentle).voice },
                   },
                 },
               }));

@@ -1,4 +1,4 @@
-.planner-page{--planner-ink:#30373d;--planner-muted:#889099;color:var(--planner-ink);height:calc(100dvh - 56px);max-width:760px;margin:0 auto;display:flex;flex-direction:column;background:white;overflow:hidden}
+.planner-page{--planner-ink:#30373d;--planner-muted:#626e7b;color:var(--planner-ink);height:calc(100dvh - 56px);max-width:760px;margin:0 auto;display:flex;flex-direction:column;background:white;overflow:hidden}
 .planner-heading{display:flex;align-items:center;justify-content:space-between;flex-shrink:0;height:64px;padding:16px 18px 0;background:var(--brand-soft)}
 .planner-heading h1{font-size:22px;line-height:1.4;margin:0}
 .planner-icon{display:grid;place-items:center;width:40px;height:40px;flex-shrink:0;background:transparent;color:#707a85;border-radius:6px}
@@ -16,7 +16,7 @@
 .planner-category-trigger{display:grid;place-items:center;width:40px;height:40px;flex-shrink:0;padding:0;color:#707a85;border-radius:6px}
 .planner-category-trigger:hover{background:#f0f5fc}
 .planner-status{display:flex;align-items:center;gap:16px;margin:0 18px;padding:0 0 8px;flex-shrink:0}
-.planner-status>button{display:flex;align-items:center;gap:6px;min-height:36px;font-size:12px;color:#9a9fa6}
+.planner-status>button{display:flex;align-items:center;gap:6px;min-height:40px;font-size:12px;color:var(--planner-muted)}
 .planner-status>button[aria-pressed=true]{color:#444d57;font-weight:600}
 .planner-status>button>span{font-size:11px;min-width:18px;padding:1px 4px;border-radius:4px;background:#f1f3f5;text-align:center}
 .planner-status>small{margin-left:auto;font-size:11px;color:#7a838e}
@@ -36,13 +36,13 @@
 .planner-task-body>strong{display:block;font-size:14px;font-weight:500;line-height:1.5;overflow-wrap:anywhere}
 .planner-task-body>strong>svg{vertical-align:middle;margin-right:5px}
 .planner-task-body>.planner-task-meta:empty{display:none}
-.planner-task-meta{display:flex;gap:5px 10px;flex-wrap:wrap;margin-top:4px;font-size:11px;color:#8b9298;line-height:1.4}
+.planner-task-meta{display:flex;gap:5px 10px;flex-wrap:wrap;margin-top:4px;font-size:12px;color:var(--planner-muted);line-height:1.5}
 .planner-task-meta>span,.planner-task-meta>time{display:inline-flex;gap:4px;align-items:center}
-.planner-task-body>small{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;overflow-wrap:anywhere;color:#8b9298;line-height:1.6;font-size:11px;margin-top:4px}
+.planner-task-body>small{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;overflow-wrap:anywhere;color:var(--planner-muted);line-height:1.6;font-size:12px;margin-top:4px}
 .planner-task.is-complete .planner-task-body>strong{text-decoration:line-through;color:#9ba2ab}
 .planner-task-priority{white-space:nowrap}
 .planner-task>.planner-icon{width:32px;height:40px}
-.planner-empty{display:flex;flex-direction:column;align-items:center;text-align:center;padding:58px 12px 30px;color:#919aa5;font-size:13px;gap:14px}
+.planner-empty{display:flex;flex-direction:column;align-items:center;text-align:center;padding:58px 12px 30px;color:var(--planner-muted);font-size:14px;gap:14px}
 .planner-empty img{width:42px;height:42px;opacity:.45;border-radius:8px}
 .planner-add-empty{display:flex;align-items:center;gap:5px;color:var(--brand-strong);font-size:13px;min-height:40px}
 .planner-month-nav{display:flex;align-items:center;min-width:0}
@@ -211,7 +211,7 @@
 .planner-habit-icon{display:grid;place-items:center;width:40px;height:40px;flex-shrink:0;border-radius:8px;background:var(--tone-soft);color:var(--tone)}
 .planner-habit-body{flex:1;text-align:left;min-width:0}
 .planner-habit-body>strong{display:block;font-size:14px;font-weight:500;line-height:1.5;overflow-wrap:anywhere}
-.planner-habit-body>small{display:block;font-size:11px;color:#969da7;margin-top:5px}
+.planner-habit-body>small{display:block;font-size:12px;color:var(--planner-muted);margin-top:5px}
 .planner-habit-check{width:38px;height:38px;display:grid;place-items:center;border-radius:50%;color:var(--tone);background:var(--tone-soft);flex-shrink:0}
 .planner-habit-check.checked{color:#fff;background:var(--tone)}
 .planner-course-scroll{padding:0 8px 20px}

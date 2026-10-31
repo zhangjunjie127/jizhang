@@ -172,7 +172,7 @@ export function createAssistantActions({ db, debts, isCalling = () => false, now
       if (!Object.keys(d).length || Object.keys(d).some(k => !['persona', 'relationship', 'proactive', 'pause', 'resume'].includes(k))) fail('不支持修改该设置');
       const u = owner(userId);
       const persona = d.persona ?? u.persona, relationship = d.relationship ?? u.relationship;
-      if (!PERSONAS[persona] || !['friend', 'romance'].includes(relationship)) fail('设置无效');
+      if (!Object.hasOwn(PERSONAS, persona) || !['friend', 'romance'].includes(relationship)) fail('设置无效');
       if (relationship === 'romance' && ageOn(u.birthday) < 18) fail('未成年人仅开放朋友模式', 403);
       if (isCalling(userId) && (persona !== u.persona || relationship !== u.relationship)) fail('请先结束通话再切换助手或关系模式', 409);
       for (const key of ['proactive', 'pause', 'resume']) if (d[key] !== undefined && typeof d[key] !== 'boolean') fail('设置值无效');

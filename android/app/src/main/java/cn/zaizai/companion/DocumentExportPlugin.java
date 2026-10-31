@@ -18,13 +18,16 @@ public class DocumentExportPlugin extends Plugin {
     public void save(PluginCall call) {
         String text = call.getString("text");
         String filename = call.getString("filename", "zaizai-ledger.csv");
-        if (text == null || !filename.matches("[a-zA-Z0-9-]+\\.csv")) {
+        String mimeType = call.getString("mimeType", "text/csv");
+        boolean csv = filename.matches("[a-zA-Z0-9-]+\\.csv") && "text/csv".equals(mimeType);
+        boolean json = filename.matches("[a-zA-Z0-9-]+\\.json") && "application/json".equals(mimeType);
+        if (text == null || text.length() > 150_000_000 || (!csv && !json)) {
             call.reject("Invalid export data");
             return;
         }
         Intent intent = new Intent(Intent.ACTION_CREATE_DOCUMENT);
         intent.addCategory(Intent.CATEGORY_OPENABLE);
-        intent.setType("text/csv");
+        intent.setType(mimeType);
         intent.putExtra(Intent.EXTRA_TITLE, filename);
         startActivityForResult(call, intent, "documentSelected");
     }
@@ -40,7 +43,7 @@ public class DocumentExportPlugin extends Plugin {
             try (OutputStream output = getContext().getContentResolver().openOutputStream(result.getData().getData(), "wt")) {
                 if (output == null) throw new java.io.IOException("No output stream");
                 String text = call.getString("text", "");
-                if (!text.startsWith("\uFEFF")) text = "\uFEFF" + text;
+                if ("text/csv".equals(call.getString("mimeType", "text/csv")) && !text.startsWith("\uFEFF")) text = "\uFEFF" + text;
                 output.write(text.getBytes(StandardCharsets.UTF_8));
                 call.resolve(new JSObject().put("cancelled", false));
             } catch (Exception error) {

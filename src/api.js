@@ -51,6 +51,27 @@ export async function exportLedger(filters) {
   setTimeout(() => URL.revokeObjectURL(url), 30000);
   return true;
 }
+export async function exportAccountData() {
+  const response = await fetch(`${getBase()}/api/account/export`, {
+    headers: { Authorization: `Bearer ${getToken()}` },
+  });
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || '个人数据导出失败');
+  }
+  const content = await response.text();
+  const filename = 'zaizai-account-export.json';
+  if (isNative) {
+    const result = await DocumentExport.save({ filename, text: content, mimeType: 'application/json' });
+    return !result.cancelled;
+  }
+  const url = URL.createObjectURL(new Blob([content], { type: 'application/json;charset=utf-8' }));
+  const anchor = document.createElement('a');
+  anchor.href = url; anchor.download = filename;
+  document.body.append(anchor); anchor.click(); anchor.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 30000);
+  return true;
+}
 export function notificationId(id) {
   let hash = 0;
   for (const char of id) hash = ((hash << 5) - hash + char.charCodeAt(0)) | 0;

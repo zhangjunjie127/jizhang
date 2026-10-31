@@ -1,4 +1,6 @@
 import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useGSAP } from '@gsap/react';
+import { gsap } from 'gsap';
 import { Apple, Camera, Check, ChevronLeft, ChevronRight, Droplets, Dumbbell, Flower2, ImagePlus, LoaderCircle, Pencil, Plus, Scale, Search, Settings2, Trash2, Moon, Smile, Stethoscope, X } from 'lucide-react';
 import { request, syncReminders, isNative } from './api';
 import { TaskPhotos, preparePhoto } from './task-photos';
@@ -31,6 +33,30 @@ export function HealthPage({ cache, cacheKey, user, records, Modal, pending, onP
   const [error, setError] = useState('');
   const [view, setView] = useState('today');
   const [medicalTab, setMedicalTab] = useState('checkup');
+  const motionRoot = useRef(null);
+  const previousMotionView = useRef({ view, medicalTab });
+  useGSAP(() => {
+    if (previousMotionView.current.view === view && previousMotionView.current.medicalTab === medicalTab) return;
+    previousMotionView.current = { view, medicalTab };
+    const root = motionRoot.current;
+    if (!root) return;
+
+    const media = gsap.matchMedia();
+    media.add('(prefers-reduced-motion: no-preference)', () => {
+      const content = [...root.children]
+        .filter(element => !element.classList.contains('health-fixed-header'))
+        .slice(0, 8);
+      if (content.length) gsap.fromTo(content, { autoAlpha: 0, y: 7 }, {
+        autoAlpha: 1,
+        y: 0,
+        duration: .24,
+        stagger: { amount: .12 },
+        ease: 'power1.out',
+        clearProps: 'opacity,visibility,transform',
+      });
+    });
+    return () => media.revert();
+  }, { scope: motionRoot, dependencies: [view, medicalTab], revertOnUpdate: true });
   const [queryDates, setQueryDates] = useState({});
   const today = healthToday();
   const dateKey = view === 'medical' ? medicalTab : view;
@@ -132,7 +158,7 @@ export function HealthPage({ cache, cacheKey, user, records, Modal, pending, onP
       <Tool icon={Trash2} label={`删除${entry.kind === 'meal' ? '饮食' : label}`} onClick={() => setDeleteEntry(entry)} />
     </div>;
   }
-  return <main className={`health-dashboard${view === 'today' ? ' health-home' : ''}`}>
+  return <main ref={motionRoot} className={`health-dashboard${view === 'today' ? ' health-home' : ''}`}>
     <div className="health-fixed-header">
     <header className="health-top-search" aria-label="健康"><button disabled={!data} onClick={() => open('meal')}><Search size={19} /><span>搜索食物营养和热量</span></button><Tool icon={Camera} label="拍照记录" disabled={!data} onClick={() => open('meal', { mode: 'photo' })} /><Tool icon={Settings2} label="健康目标设置" disabled={!data} onClick={() => setEditor({ kind: 'settings', ...settings })} /></header>
     {view !== 'today' && <div className="health-subpage-heading"><Tool icon={ChevronLeft} label="返回健康首页" onClick={() => setView('today')} /><h1>{{ devices: '设备与数据同步', history: '健康记录', weight: '体重趋势', period: '生理周期', nutrition: '饮食与运动', water: '喝水记录', bowel: '排便记录', sleep: '睡眠记录', medical: '健康档案' }[view]}</h1></div>}
